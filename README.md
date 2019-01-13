@@ -5,13 +5,13 @@ web-based e-commerce app called **“Hipster Shop”** where users can browse it
 add them to the cart, and purchase them.
 
 **Google uses this application to demonstrate Kubernetes, GKE, Istio,
-Stackdriver, gRPC** and similar cloud-native technologies nowadays.
+Stackdriver, gRPC, OpenCensus** and similar cloud-native technologies.
 
 ## Screenshots
 
 | Home Page | Checkout Screen |
 |-----------|-----------------|
-| [![Screenshot of store homepage](./img/hipster-shop-frontend-1.png)](./img/hipster-shop-frontend-1.png) | [![Screenshot of checkout screen](./img/hipster-shop-frontend-2.png)](./img/hipster-shop-frontend-2.png) |
+| [![Screenshot of store homepage](./docs/img/hipster-shop-frontend-1.png)](./docs/img/hipster-shop-frontend-1.png) | [![Screenshot of checkout screen](./docs/img/hipster-shop-frontend-2.png)](./docs/img/hipster-shop-frontend-2.png) |
 
 ## Service Architecture
 
@@ -19,7 +19,7 @@ Stackdriver, gRPC** and similar cloud-native technologies nowadays.
 languages that talk to each other over gRPC.
 
 [![Architecture of
-microservices](./img/architecture-diagram.png)](./img/architecture-diagram.png)
+microservices](./docs/img/architecture-diagram.png)](./docs/img/architecture-diagram.png)
 
 Find **Protocol Buffers Descriptions** at the [`./pb` directory](./pb).
 
@@ -173,6 +173,14 @@ Find **Protocol Buffers Descriptions** at the [`./pb` directory](./pb).
        echo "$INGRESS_HOST"
 
        curl -v "http://$INGRESS_HOST"
+
+## Conferences featuring Hipster Shop 
+
+- [Google Cloud Next'18 London – Keynote](https://youtu.be/nIq2pkNcfEI?t=3071) showing Stackdriver Incident Response Management
+- Google Cloud Next'18 SF
+  - [Day 1  Keynote](https://youtu.be/vJ9OaAqfxo4?t=2416) showing GKE On-Prem
+  - [Day 3 – Keynote](https://youtu.be/JQPOPV_VH5w?t=815) showing Stackdriver APM (Tracing, Code Search, Profiler, Google Cloud Build)
+  - [Introduction to Service Management with Istio](https://www.youtube.com/watch?v=wCJrdKdD6UM&feature=youtu.be&t=586)
 
 ---
 
