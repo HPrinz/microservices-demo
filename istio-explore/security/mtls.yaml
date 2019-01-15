@@ -1,0 +1,299 @@
+# adservice
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: Policy
+metadata:
+  name: adservice-policy
+spec:
+  targets:
+  - name: adservice
+  peers:
+  - mtls:
+      mode: STRICT
+
+---
+
+apiVersion: "networking.istio.io/v1alpha3"
+kind: DestinationRule
+metadata:
+  name: adservice-istio-client-mtls
+spec:
+  host: adservice.default.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+
+---
+# cartservice
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: Policy
+metadata:
+  name: cartservice-policy
+spec:
+  targets:
+  - name: cartservice
+  peers:
+  - mtls:
+      mode: STRICT
+
+---
+
+apiVersion: "networking.istio.io/v1alpha3"
+kind: DestinationRule
+metadata:
+  name: cartservice-istio-client-mtls
+spec:
+  host: cartservice.default.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+
+---
+# checkoutservice
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: Policy
+metadata:
+  name: checkoutservice-policy
+spec:
+  targets:
+  - name: checkoutservice
+  peers:
+  - mtls:
+      mode: STRICT
+
+---
+
+apiVersion: "networking.istio.io/v1alpha3"
+kind: DestinationRule
+metadata:
+  name: checkoutservice-istio-client-mtls
+spec:
+  host: checkoutservice.default.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+---
+# currencyservice
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: Policy
+metadata:
+  name: currencyservice-policy
+spec:
+  targets:
+  - name: currencyservice
+  peers:
+  - mtls:
+      mode: STRICT
+
+---
+
+apiVersion: "networking.istio.io/v1alpha3"
+kind: DestinationRule
+metadata:
+  name: currencyservice-istio-client-mtls
+spec:
+  host: currencyservice.default.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+
+---
+# details
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: Policy
+metadata:
+  name: details-policy
+spec:
+  targets:
+  - name: details
+  peers:
+  - mtls:
+      mode: STRICT
+
+---
+
+apiVersion: "networking.istio.io/v1alpha3"
+kind: DestinationRule
+metadata:
+  name: details-istio-client-mtls
+spec:
+  host: details.default.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+
+---
+# emailservice
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: Policy
+metadata:
+  name: emailservice-policy
+spec:
+  targets:
+  - name: emailservice
+  peers:
+  - mtls:
+      mode: STRICT
+
+---
+
+apiVersion: "networking.istio.io/v1alpha3"
+kind: DestinationRule
+metadata:
+  name: emailservice-istio-client-mtls
+spec:
+  host: emailservice.default.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+
+---
+# paymentservice
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: Policy
+metadata:
+  name: paymentservice-policy
+spec:
+  targets:
+  - name: paymentservice
+  peers:
+  - mtls:
+      mode: STRICT
+
+---
+
+apiVersion: "networking.istio.io/v1alpha3"
+kind: DestinationRule
+metadata:
+  name: paymentservice-istio-client-mtls
+spec:
+  host: paymentservice.default.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+
+---
+# productcatalogservice
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: Policy
+metadata:
+  name: productcatalogservice-policy
+spec:
+  targets:
+  - name: productcatalogservice
+  peers:
+  - mtls:
+      mode: STRICT
+
+---
+
+apiVersion: "networking.istio.io/v1alpha3"
+kind: DestinationRule
+metadata:
+  name: productcatalogservice-istio-client-mtls
+spec:
+  host: productcatalogservice.default.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+
+# TODO?!
+# ---
+# # shippingservice
+# apiVersion: "authentication.istio.io/v1alpha1"
+# kind: Policy
+# metadata:
+#   name: shippingservice-policy
+# spec:
+#   targets:
+#   - name: shippingservice
+#   peers:
+#   - mtls:
+#       mode: STRICT
+
+# ---
+
+# apiVersion: "networking.istio.io/v1alpha3"
+# kind: DestinationRule
+# metadata:
+#   name: shippingservice-istio-client-mtls
+# spec:
+#   host: shippingservice.default.svc.cluster.local
+#   trafficPolicy:
+#     tls:
+#       mode: ISTIO_MUTUAL
+
+# ---
+# # recommendationservice
+# apiVersion: "authentication.istio.io/v1alpha1"
+# kind: Policy
+# metadata:
+#   name: recommendationservice-policy
+# spec:
+#   targets:
+#   - name: recommendationservice
+#   peers:
+#   - mtls:
+#       mode: STRICT
+
+# ---
+
+# apiVersion: "networking.istio.io/v1alpha3"
+# kind: DestinationRule
+# metadata:
+#   name: recommendationservice-istio-client-mtls
+# spec:
+#   host: recommendationservice.default.svc.cluster.local
+#   trafficPolicy:
+#     tls:
+#       mode: ISTIO_MUTUAL
+
+---
+# frontend
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: Policy
+metadata:
+  name: frontend-policy
+spec:
+  targets:
+  - name: frontend
+  peers:
+  - mtls:
+      mode: STRICT
+
+---
+
+apiVersion: "networking.istio.io/v1alpha3"
+kind: DestinationRule
+metadata:
+  name: frontend-istio-client-mtls
+spec:
+  host: frontend.default.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+
+
+---
+# frontend-external
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: Policy
+metadata:
+  name: frontend-external-policy
+spec:
+  targets:
+  - name: frontend-external
+  peers:
+  - mtls:
+      mode: STRICT
+
+---
+
+apiVersion: "networking.istio.io/v1alpha3"
+kind: DestinationRule
+metadata:
+  name: frontend-external-istio-client-mtls
+spec:
+  host: frontend-external.default.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL

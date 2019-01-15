@@ -1,0 +1,22 @@
+apiVersion: "config.istio.io/v1alpha2"
+kind: fluentd
+metadata:
+  name: handler
+  namespace: istio-system
+spec:
+  address: "fluentd-es.logging:24224"
+
+---
+
+apiVersion: "config.istio.io/v1alpha2"
+kind: rule
+metadata:
+  name: new-log-fluentd
+  namespace: istio-system
+spec:
+  # match: "true"
+  match: destination.labels["app"]!="telemetry" # match only for non-telemetry-calls
+  actions:
+   - handler: handler.fluentd
+     instances:
+     - newlog.logentry

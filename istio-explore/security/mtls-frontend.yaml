@@ -1,0 +1,26 @@
+
+# frontend
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: Policy
+metadata:
+  name: frontend-policy
+spec:
+  targets:
+  - name: frontend
+  peers:
+  - mtls:
+      mode: PERMISSIVE
+
+---
+
+# frontend-external
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: Policy
+metadata:
+  name: frontend-external-policy
+spec:
+  targets:
+  - name: frontend-external
+  peers:
+  - mtls:
+      mode: PERMISSIVE

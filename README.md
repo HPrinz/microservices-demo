@@ -102,17 +102,17 @@ Find **Protocol Buffers Descriptions** at the [`./pb` directory](./pb).
    to the cluster.
 
         gcloud services enable container.googleapis.com
-
+    
         gcloud container clusters create demo --enable-autoupgrade \
             --enable-autoscaling --min-nodes=3 --max-nodes=10 --num-nodes=5 --zone=us-central1-a
-
+    
         kubectl get nodes
 
 1. Enable Google Container Registry (GCR) on your GCP project and configure the
    `docker` CLI to authenticate to GCR:
 
        gcloud services enable containerregistry.googleapis.com
-
+    
        gcloud auth configure-docker -q
 
 1. In the root of this repository, run `skaffold run --default-repo=gcr.io/[PROJECT_ID]`,
@@ -126,7 +126,7 @@ Find **Protocol Buffers Descriptions** at the [`./pb` directory](./pb).
 
    **Troubleshooting:** If you get "No space left on device" error on Google Cloud Shell,
    you can build the images on Google Cloud Build:
-   [Enable the Cloud Build API](https://console.cloud.google.com/flows/enableapi?apiid=cloudbuild.googleapis.com), then run `skaffold run -p gcb  --default-repo=gcr.io/[PROJECT_ID]` instead.
+   [Enable the Cloud Build API](https://console.cloud.google.com/flows/enableapi?apiid=cloudbuild.googleapis.com), then run `skaffold run -p gcb --default-repo=gcr.io/[PROJECT_ID]` instead.
 
 1.  Find the IP address of your application, then visit the application on your
     browser to confirm installation.
@@ -134,8 +134,7 @@ Find **Protocol Buffers Descriptions** at the [`./pb` directory](./pb).
         kubectl get service frontend-external
 
     **Troubleshooting:** A Kubernetes bug (will be fixed in 1.12) combined with
-    a Skaffold [bug](https://github.com/GoogleContainerTools/skaffold/issues/887)
-    causes load balancer to not to work even after getting an IP address. If you
+    a Skaffold [bug](https://github.com/GoogleContainerTools/skaffold/issues/887) causes load balancer to not to work even after getting an IP address. If you
     are seeing this, run `kubectl get service frontend-external -o=yaml | kubectl apply -f-`
     to trigger load balancer reconfiguration.
 
@@ -144,9 +143,57 @@ Find **Protocol Buffers Descriptions** at the [`./pb` directory](./pb).
 > **Note:** you followed GKE deployment steps above, run `skaffold delete` first
 > to delete what's deployed.
 
-1. Create a GKE cluster.
+1. Create a GKE cluster:
 
-2. Install Istio **without mutual TLS** authentication option.
+   ```shell
+   # set region & zone
+   gcloud config set compute/region europe-west3 # Frankfurt
+   gcloud config set compute/zone europe-west3-c
+   
+   # enable container & registry
+   gcloud services enable container.googleapis.com containerregistry.googleapis.com
+   
+   gcloud container clusters create istio-workshop \
+         --enable-autoscaling --min-nodes=2 --max-nodes=3 --num-nodes=2 \
+         --machine-type n1-standard-2 --enable-autoupgrade \
+         --scopes cloud-platform
+   
+   gcloud auth configure-docker -q # no cloudshell
+   
+   kubectl create clusterrolebinding cluster-admin-binding \
+       --clusterrole=cluster-admin \
+       --user=$(gcloud config get-value core/account)
+   ```
+
+2. Install Istio without mTLS
+
+   ```shell
+   kubectl apply -f kiali/kiali-secrets.yaml
+   
+   cd $HOME
+   curl -L https://git.io/getLatestIstio | sh -
+   cd istio-1.0.5
+   kubectl apply -f install/kubernetes/helm/istio/templates/crds.yaml
+   kubectl create namespace istio-system
+   helm template install/kubernetes/helm/istio \
+     --set grafana.enabled=true --set tracing.enabled=true \
+     --name istio --namespace istio-system > $HOME/istio.yaml
+   kubectl apply -f $HOME/istio.yaml
+   kubectl label namespace default istio-injection=enabled
+   
+   kubectl -n istio-system port-forward deployment/istio-tracing 16686:16686 &
+   kubectl -n istio-system port-forward deployment/grafana 3000:3000 &
+   
+   helm template $HOME/istio-1.0.5/install/kubernetes/helm/istio \
+       --set grafana.enabled=true --set tracing.enabled=true --set kiali.enabled=true \
+       --set "kiali.dashboard.jaegerURL=http://localhost:16686" \
+       --set "kiali.dashboard.grafanaURL=http://localhost:3000" \
+       --name istio --namespace istio-system > $HOME/istio.yaml
+   kubectl apply -f $HOME/istio.yaml
+   
+   kubectl -n istio-system port-forward deployment/kiali 20001:20001 &
+   open http://localhost:20001
+   ```
 
    > (Optional) If you'd like to enable mTLS in the demo app, you need to
    > make a few changes to the deployment manifests:
@@ -155,29 +202,26 @@ Find **Protocol Buffers Descriptions** at the [`./pb` directory](./pb).
    >   "readinessProbe" fields.
    > - `kubernetes-manifests/loadgenerator.yaml`: delete "initContainers" field.
 
-3. Install the automatic sidecar injection (annotate the `default` namespace
-   with the label):
-
-       kubectl label namespace default istio-injection=enabled
-
-4. Apply the manifests in [`./istio-manifests`](./istio-manifests) directory.
+3. Apply the manifests in [`./istio-manifests`](./istio-manifests) directory.
 
        kubectl apply -f ./istio-manifests
 
     This is required only once.
 
-5. Deploy the application with `skaffold run --default-repo=gcr.io/[PROJECT_ID]`.
+4. Deploy the application with `skaffold run --default-repo=gcr.io/[PROJECT_ID]`.
 
-6. Run `kubectl get pods` to see pods are in a healthy and ready state.
+5. Run `kubectl get pods` to see pods are in a healthy and ready state.
 
-7. Find the IP address of your istio gateway Ingress or Service, and visit the
+6. Find the IP address of your istio gateway Ingress or Service, and visit the
    application.
 
        INGRESS_HOST="$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
-
+       
        echo "$INGRESS_HOST"
-
+       
        curl -v "http://$INGRESS_HOST"
+
+
 
 ## Conferences featuring Hipster Shop 
 

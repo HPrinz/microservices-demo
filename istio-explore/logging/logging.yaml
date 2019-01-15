@@ -1,0 +1,26 @@
+# Configuration for a stdio handler
+apiVersion: "config.istio.io/v1alpha2"
+kind: stdio
+metadata:
+  name: newhandler
+  namespace: istio-system
+spec:
+ severity_levels:
+   info: 0 # Params.Level.INFO
+   warning: 1 # Params.Level.WARNING
+ outputAsJson: true
+
+---
+
+# Rule to send logentry instances to a stdio handler
+apiVersion: "config.istio.io/v1alpha2"
+kind: rule
+metadata:
+  name: new-log-stdio
+  namespace: istio-system
+spec:
+  match: destination.labels["app"]!="telemetry" # match only for non-telemetry-calls
+  actions:
+   - handler: newhandler.stdio
+     instances:
+     - newlog.logentry

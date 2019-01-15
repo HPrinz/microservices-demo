@@ -1,0 +1,129 @@
+
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: adservice
+spec:
+  hosts:
+  - "adservice.default.svc.cluster.local"
+  http:
+  - route:
+    - destination:
+        host: adservice
+        port:
+          number: 9555
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: cartservice
+spec:
+  hosts:
+  - "cartservice.default.svc.cluster.local"
+  http:
+  - route:
+    - destination:
+        host: cartservice
+        port:
+          number: 7070
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: checkoutservice
+spec:
+  hosts:
+  - "checkoutservice.default.svc.cluster.local"
+  http:
+  - route:
+    - destination:
+        host: checkoutservice
+        port:
+          number: 5050
+
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: currencyservice
+spec:
+  hosts:
+  - "currencyservice.default.svc.cluster.local"
+  http:
+  - route:
+    - destination:
+        host: currencyservice
+        port:
+          number: 7000
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: emailservice
+spec:
+  hosts:
+  - "emailservice.default.svc.cluster.local"
+  http:
+  - route:
+    - destination:
+        host: emailservice
+        port:
+          number: 5000
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: paymentservice
+spec:
+  hosts:
+  - "paymentservice.default.svc.cluster.local"
+  http:
+  - route:
+    - destination:
+        host: paymentservice
+        port:
+          number: 50051
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: productcatalogservice
+spec:
+  hosts:
+  - "productcatalogservice.default.svc.cluster.local"
+  http:
+  - route:
+    - destination:
+        host: productcatalogservice
+        port:
+          number: 3550
+
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: recommendationservice
+spec:
+  hosts:
+  - "recommendationservice.default.svc.cluster.local"
+  http:
+  - route:
+    - destination:
+        host: recommendationservice
+        port:
+          number: 8080
+
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: shippingservice
+spec:
+  hosts:
+  - "shippingservice.default.svc.cluster.local"
+  http:
+  - route:
+    - destination:
+        host: shippingservice
+        port:
+          number: 50051
