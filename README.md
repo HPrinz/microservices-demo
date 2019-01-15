@@ -92,80 +92,72 @@ Find **Protocol Buffers Descriptions** at the [`./pb` directory](./pb).
    application frontend should be available at http://localhost:80 on your
    machine.
 
-### Option 2: Running on Google Kubernetes Engine (GKE)
+### Option 2: Deploy on Google Kubernetes Engine with Istio
 
-> 💡  Recommended for demos and making it available publicly.
-
-1. Install tools specified in the previous section (Docker, kubectl, skaffold)
-
-1. Create a Google Kubernetes Engine cluster and make sure `kubectl` is pointing
-   to the cluster.
-
-        gcloud services enable container.googleapis.com
-    
-        gcloud container clusters create demo --enable-autoupgrade \
-            --enable-autoscaling --min-nodes=3 --max-nodes=10 --num-nodes=5 --zone=us-central1-a
-    
-        kubectl get nodes
-
-1. Enable Google Container Registry (GCR) on your GCP project and configure the
-   `docker` CLI to authenticate to GCR:
-
-       gcloud services enable containerregistry.googleapis.com
-    
-       gcloud auth configure-docker -q
-
-1. In the root of this repository, run `skaffold run --default-repo=gcr.io/[PROJECT_ID]`,
-   where [PROJECT_ID] is your GCP project ID.
-   
-   This command:
-   - builds the container images
-   - pushes them to GCR
-   - applies the `./kubernetes-manifests` deploying the application to
-     Kubernetes.
-
-   **Troubleshooting:** If you get "No space left on device" error on Google Cloud Shell,
-   you can build the images on Google Cloud Build:
-   [Enable the Cloud Build API](https://console.cloud.google.com/flows/enableapi?apiid=cloudbuild.googleapis.com), then run `skaffold run -p gcb --default-repo=gcr.io/[PROJECT_ID]` instead.
-
-1.  Find the IP address of your application, then visit the application on your
-    browser to confirm installation.
-
-        kubectl get service frontend-external
-
-    **Troubleshooting:** A Kubernetes bug (will be fixed in 1.12) combined with
-    a Skaffold [bug](https://github.com/GoogleContainerTools/skaffold/issues/887) causes load balancer to not to work even after getting an IP address. If you
-    are seeing this, run `kubectl get service frontend-external -o=yaml | kubectl apply -f-`
-    to trigger load balancer reconfiguration.
-
-### (Optional) Deploying on a Istio-installed cluster
-
-> **Note:** you followed GKE deployment steps above, run `skaffold delete` first
+>  **Note:** you followed GKE deployment steps above, run `skaffold delete` first
 > to delete what's deployed.
 
-1. Create a GKE cluster:
+>  (Optional) If you'd like to enable **mTLS** in the demo app, you need to
+> make a few changes to the deployment manifests:
+>
+> - `kubernetes-manifests/frontend.yaml`: delete "livenessProbe" and
+>   "readinessProbe" fields.
+> - kubernetes-manifests/loadgenerator.yaml`: delete "initContainers" field.
 
-   ```shell
-   # set region & zone
-   gcloud config set compute/region europe-west3 # Frankfurt
-   gcloud config set compute/zone europe-west3-c
-   
-   # enable container & registry
-   gcloud services enable container.googleapis.com containerregistry.googleapis.com
-   
-   gcloud container clusters create istio-workshop \
-         --enable-autoscaling --min-nodes=2 --max-nodes=3 --num-nodes=2 \
-         --machine-type n1-standard-2 --enable-autoupgrade \
-         --scopes cloud-platform
-   
-   gcloud auth configure-docker -q # no cloudshell
-   
-   kubectl create clusterrolebinding cluster-admin-binding \
-       --clusterrole=cluster-admin \
-       --user=$(gcloud config get-value core/account)
+#### Create Cluster
+
+```shell
+# set region & zone
+gcloud config set compute/region europe-west3 # Frankfurt
+gcloud config set compute/zone europe-west3-c
+
+# enable container & registry
+gcloud services enable container.googleapis.com containerregistry.googleapis.com
+
+gcloud container clusters create istio-workshop \
+      --enable-autoscaling --min-nodes=2 --max-nodes=3 --num-nodes=2 \
+      --machine-type n1-standard-2 --enable-autoupgrade \
+      --scopes cloud-platform
+
+gcloud auth configure-docker -q # no cloudshell
+
+kubectl create clusterrolebinding cluster-admin-binding \
+    --clusterrole=cluster-admin \
+    --user=$(gcloud config get-value core/account)
+```
+
+
+
+#### Option 1: Install Istio via native GKE features
+
+1. Create a GKE cluster (described above).
+
+2. Use [Istio on GKE add-on](https://cloud.google.com/istio/docs/istio-on-gke/installing)
+   to install Istio to your existing GKE cluster.
+
+   ```
+   gcloud beta container clusters update demo \
+       --zone=us-central1-a \
+       --update-addons=Istio=ENABLED \
+       --istio-config=auth=MTLS_PERMISSIVE
    ```
 
-2. Install Istio without mTLS
+3. (Optional) Enable Stackdriver Tracing/Logging with Istio Stackdriver Adapter
+   by [following this guide](https://cloud.google.com/istio/docs/istio-on-gke/installing#enabling_tracing_and_logging).
+
+4. Apply the manifests in [`./istio-manifests`](./istio-manifests) directory.
+
+   ```
+   kubectl apply -f ./istio-manifests
+   ```
+
+    This is required only once.
+
+
+
+#### Option 2: Install Istio on plain GKE cluster
+
+1. Install Istio without mTLS
 
    ```shell
    kubectl apply -f kiali/kiali-secrets.yaml
@@ -184,6 +176,8 @@ Find **Protocol Buffers Descriptions** at the [`./pb` directory](./pb).
    kubectl -n istio-system port-forward deployment/istio-tracing 16686:16686 &
    kubectl -n istio-system port-forward deployment/grafana 3000:3000 &
    
+   kubectl apply -f ./istio-manifests
+   
    helm template $HOME/istio-1.0.5/install/kubernetes/helm/istio \
        --set grafana.enabled=true --set tracing.enabled=true --set kiali.enabled=true \
        --set "kiali.dashboard.jaegerURL=http://localhost:16686" \
@@ -195,24 +189,27 @@ Find **Protocol Buffers Descriptions** at the [`./pb` directory](./pb).
    open http://localhost:20001
    ```
 
-   > (Optional) If you'd like to enable mTLS in the demo app, you need to
-   > make a few changes to the deployment manifests:
-   >
-   > - `kubernetes-manifests/frontend.yaml`: delete "livenessProbe" and
-   >   "readinessProbe" fields.
-   > - `kubernetes-manifests/loadgenerator.yaml`: delete "initContainers" field.
 
-3. Apply the manifests in [`./istio-manifests`](./istio-manifests) directory.
 
-       kubectl apply -f ./istio-manifests
 
-    This is required only once.
+#### Both
 
-4. Deploy the application with `skaffold run --default-repo=gcr.io/[PROJECT_ID]`.
+1. In the root of this repository, run `skaffold run --default-repo=gcr.io/[PROJECT_ID]`, where [PROJECT_ID] is your GCP project ID.
 
-5. Run `kubectl get pods` to see pods are in a healthy and ready state.
+   This command:
 
-6. Find the IP address of your istio gateway Ingress or Service, and visit the
+   - builds the container images
+   - pushes them to GCR
+   - applies the `./kubernetes-manifests` deploying the application to
+     Kubernetes.
+
+   **Troubleshooting:** If you get "No space left on device" error on Google Cloud Shell,
+   you can build the images on Google Cloud Build:
+   [Enable the Cloud Build API](https://console.cloud.google.com/flows/enableapi?apiid=cloudbuild.googleapis.com), then run `skaffold run -p gcb --default-repo=gcr.io/[PROJECT_ID]` instead.
+
+2. Run `kubectl get pods` to see pods are in a healthy and ready state.
+
+3. Find the IP address of your istio gateway Ingress or Service, and visit the
    application.
 
        INGRESS_HOST="$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
@@ -220,6 +217,16 @@ Find **Protocol Buffers Descriptions** at the [`./pb` directory](./pb).
        echo "$INGRESS_HOST"
        
        curl -v "http://$INGRESS_HOST"
+
+   without istio use
+
+   ```shell
+   kubectl get service frontend-external
+   ```
+
+   
+
+**Troubleshooting:** A Kubernetes bug (will be fixed in 1.12) combined with a Skaffold [bug](https://github.com/GoogleContainerTools/skaffold/issues/887) causes load balancer to not to work even after getting an IP address. If you are seeing this, run `kubectl get service frontend-external -o=yaml | kubectl apply -f-` to trigger load balancer reconfiguration.
 
 
 
