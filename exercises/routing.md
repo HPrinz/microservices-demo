@@ -2,39 +2,64 @@
 
 [TOC]
 
-#### A/B Deployment
+#### 1. Zweite Version des Frontends deployen
 
-TODO
+```shell
+kubectl apply -f istio-explore/routing/frontend_v2.yaml
+```
 
-#### Load Balancing?
+**Deployment** - für alternative Version des Frontend mit Label "version: 2"
 
-TODO
+```yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: frontend2
+spec:
+  template:
+    metadata:
+      labels:
+        app: frontend
+        version: "2"
+    spec:
+      containers:
+        - name: server
+          image: gcr.io/hanna-prinz/frontend:c0ade69 # anderer Tag
+          ports:
+          - containerPort: 8080
+          env:
+            [...]
+```
 
-#### Canary Deployment
+#### 2. DestinationRole
 
-TODO
+```
+kubectl apply -f istio-explore/routing/frontend-destination-role.yaml
+```
 
-Prozentuale Verteilung auf verschiedene Label/Versionen
-
-**DestinationRole**
+**DestinationRule** - Mappt Labels auf "Subsets"
 
 ```yaml
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
-  name: guestbook-ui
+  name: frontend
 spec:
-  host: guestbook-ui
+  host: frontend
   subsets:
   - name: v1
     labels:
-      version: "1.0"
+      version: "1"
   - name: v2
     labels:
-      version: "2.0"
+      version: "2"
 ```
 
+#### 3. Canary Release
 
+```shell
+kubectl apply -f istio-explore/routing/frontend-canary.yaml
+```
 
 **VirtualService** - routet 80% auf v1 und 20% auf v2
 
@@ -42,32 +67,36 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-  name: guestbook-ui
+  name: frontend
 spec:
   hosts:
   - "*"
   gateways:
-  - guestbook-gateway
+  - frontend-gateway
   http:
   - match:
     - uri:
         prefix: /
     route:
     - destination:
-        host: guestbook-ui
+        host: frontend
         subset: v1
-      weight: 80
-    - destination:
-        host: guestbook-ui
-        subset: v2
       weight: 20
+    - destination:
+        host: frontend
+        subset: v2
+      weight: 80
 ```
 
 
 
-#### Routing anhand des User Agents
+#### 4. Canary Release für Chrome Browser
 
-TODO
+```
+kubectl apply -f istio-explore/routing/frontend-canary-chrome.yaml
+```
+
+
 
 **VirtualService** - Routet alle Chrome User-Agents auf v2
 
@@ -75,12 +104,12 @@ TODO
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-  name: guestbook-ui
+  name: frontend
 spec:
   hosts:
   - "*"
   gateways:
-  - guestbook-gateway
+  - frontend-gateway
   http:
   - match:
     - uri:
@@ -90,13 +119,23 @@ spec:
           regex: ".*Chrome.*"
     route:
     - destination:
-        host: guestbook-ui
+        host: frontend
         subset: v2
   - match:
     - uri:
         prefix: /
     route:
     - destination:
-        host: guestbook-ui
+        host: frontend
         subset: v1
 ```
+
+#### 5. A/B Deployment
+
+TODO
+
+#### 6. Load Balancing?
+
+TODO
+
+#### 

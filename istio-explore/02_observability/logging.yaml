@@ -2,7 +2,7 @@
 apiVersion: "config.istio.io/v1alpha2"
 kind: stdio
 metadata:
-  name: newhandler
+  name: stdio-handler
   namespace: istio-system
 spec:
  severity_levels:
@@ -21,6 +21,6 @@ metadata:
 spec:
   match: destination.labels["app"]!="telemetry" # match only for non-telemetry-calls
   actions:
-   - handler: newhandler.stdio
+   - handler: stdio-handler.stdio
      instances:
      - newlog.logentry

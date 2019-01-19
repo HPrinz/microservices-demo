@@ -15,17 +15,17 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: recommendationservice
+  name: emailservice
 spec:
   template:
     metadata:
       labels:
-        app: recommendationservice
+        app: emailservice
     spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/hanna-prinz/recommendationservice
+        image: emailservice
         ports:
         - containerPort: 8080
         readinessProbe:
@@ -36,26 +36,23 @@ spec:
           periodSeconds: 5
           exec:
             command: ["/bin/grpc_health_probe", "-addr=:8080"]
-        env:
-        - name: PRODUCT_CATALOG_SERVICE_ADDR
-          value: "productcatalogservice:3550"
         resources:
           requests:
             cpu: 100m
-            memory: 220Mi
+            memory: 64Mi
           limits:
             cpu: 200m
-            memory: 450Mi
+            memory: 128Mi
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: recommendationservice
+  name: emailservice
 spec:
   type: ClusterIP
   selector:
-    app: recommendationservice
+    app: emailservice
   ports:
   - name: grpc
-    port: 8080
+    port: 5000
     targetPort: 8080

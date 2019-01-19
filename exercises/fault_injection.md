@@ -1,6 +1,9 @@
 ### Fault Injection
 
+**Inhalt:**
 
+- Fault Injection sorgt dafür, dass n% der Anfragen mit einem Fehler beantwortet werden
+- Kein Werkzeug um Resilienz herzustellen, sondern um sie zu testen - z.B. Testen von Circuit Breaker 
 
 #### 1. Zum Test des Circuit Breakers: Fault Injection für Recommendation-Service
 

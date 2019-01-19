@@ -132,8 +132,7 @@ kubectl create clusterrolebinding cluster-admin-binding \
 
 1. Create a GKE cluster (described above).
 
-2. Use [Istio on GKE add-on](https://cloud.google.com/istio/docs/istio-on-gke/installing)
-   to install Istio to your existing GKE cluster.
+2. Use [Istio on GKE add-on](https://cloud.google.com/istio/docs/istio-on-gke/installing) to install Istio to your existing GKE cluster.
 
    ```
    gcloud beta container clusters update demo \

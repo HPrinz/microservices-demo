@@ -15,47 +15,43 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: recommendationservice
+  name: currencyservice
 spec:
   template:
     metadata:
       labels:
-        app: recommendationservice
+        app: currencyservice
     spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/hanna-prinz/recommendationservice
+        image: currencyservice
         ports:
-        - containerPort: 8080
+        - name: grpc
+          containerPort: 7000
         readinessProbe:
-          periodSeconds: 5
           exec:
-            command: ["/bin/grpc_health_probe", "-addr=:8080"]
+            command: ["/bin/grpc_health_probe", "-addr=:7000"]
         livenessProbe:
-          periodSeconds: 5
           exec:
-            command: ["/bin/grpc_health_probe", "-addr=:8080"]
-        env:
-        - name: PRODUCT_CATALOG_SERVICE_ADDR
-          value: "productcatalogservice:3550"
+            command: ["/bin/grpc_health_probe", "-addr=:7000"]
         resources:
           requests:
             cpu: 100m
-            memory: 220Mi
+            memory: 64Mi
           limits:
             cpu: 200m
-            memory: 450Mi
+            memory: 128Mi
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: recommendationservice
+  name: currencyservice
 spec:
   type: ClusterIP
   selector:
-    app: recommendationservice
+    app: currencyservice
   ports:
   - name: grpc
-    port: 8080
-    targetPort: 8080
+    port: 7000
+    targetPort: 7000

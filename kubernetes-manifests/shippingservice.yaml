@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
       - name: server
-        image: shippingservice
+        image: gcr.io/hanna-prinz/shippingservice
         ports:
         - containerPort: 50051
         readinessProbe:

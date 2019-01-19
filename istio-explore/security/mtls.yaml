@@ -96,30 +96,6 @@ spec:
     tls:
       mode: ISTIO_MUTUAL
 
----
-# details
-apiVersion: "authentication.istio.io/v1alpha1"
-kind: Policy
-metadata:
-  name: details-policy
-spec:
-  targets:
-  - name: details
-  peers:
-  - mtls:
-      mode: STRICT
-
----
-
-apiVersion: "networking.istio.io/v1alpha3"
-kind: DestinationRule
-metadata:
-  name: details-istio-client-mtls
-spec:
-  host: details.default.svc.cluster.local
-  trafficPolicy:
-    tls:
-      mode: ISTIO_MUTUAL
 
 ---
 # emailservice

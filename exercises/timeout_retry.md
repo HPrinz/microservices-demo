@@ -1,5 +1,10 @@
 ### Timeout & Retry
 
+**Inhalt:**
+
+- Timeout: Zeit nach der eine Anfrage abgebrochen wird
+- Retry: Anzahl der Neuversuche bis die Anfrage als gescheitert gilt
+
 #### 1. Timeout & Retry festlegen
 
 ```shell

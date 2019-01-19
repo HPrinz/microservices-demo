@@ -15,47 +15,49 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: recommendationservice
+  name: redis-cart
 spec:
   template:
     metadata:
       labels:
-        app: recommendationservice
+        app: redis-cart
     spec:
-      terminationGracePeriodSeconds: 5
       containers:
-      - name: server
-        image: gcr.io/hanna-prinz/recommendationservice
+      - name: redis
+        image: redis:alpine
         ports:
-        - containerPort: 8080
+        - containerPort: 6379
         readinessProbe:
           periodSeconds: 5
-          exec:
-            command: ["/bin/grpc_health_probe", "-addr=:8080"]
+          tcpSocket:
+            port: 6379
         livenessProbe:
           periodSeconds: 5
-          exec:
-            command: ["/bin/grpc_health_probe", "-addr=:8080"]
-        env:
-        - name: PRODUCT_CATALOG_SERVICE_ADDR
-          value: "productcatalogservice:3550"
+          tcpSocket:
+            port: 6379
+        volumeMounts:
+        - mountPath: /data
+          name: redis-data
         resources:
-          requests:
-            cpu: 100m
-            memory: 220Mi
           limits:
-            cpu: 200m
-            memory: 450Mi
+            memory: 256Mi
+            cpu: 125m
+          requests:
+            cpu: 70m
+            memory: 200Mi
+      volumes:
+      - name: redis-data
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: recommendationservice
+  name: redis-cart
 spec:
   type: ClusterIP
   selector:
-    app: recommendationservice
+    app: redis-cart
   ports:
-  - name: grpc
-    port: 8080
-    targetPort: 8080
+  - name: redis
+    port: 6379
+    targetPort: 6379

@@ -17,7 +17,7 @@ kind: Deployment
 metadata:
   name: loadgenerator
 spec:
-  replicas: 1
+  replicas: 0
   template:
     metadata:
       labels:
@@ -38,7 +38,7 @@ spec:
       #     value: "frontend:80"
       containers:
       - name: main
-        image: loadgenerator
+        image: gcr.io/hanna-prinz/loadgenerator
         env:
         - name: FRONTEND_ADDR
           value: "frontend:80"

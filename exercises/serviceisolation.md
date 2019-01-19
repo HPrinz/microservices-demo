@@ -1,10 +1,10 @@
 #### Abweisung aller Anfragen an einen Service (Service Isolation)
 
+- Für Testzwecke
+
 ```shell
-kubcetl apply -f istio-explore/routing/deny-currencyservice.yaml
+kubectl apply -f istio-explore/routing/deny-currencyservice.yaml
 ```
-
-
 
 **denier** - Adapter, der alle Anfragen mit den google.rpc.Code 7 (PERMISSION_DENIED) abweist
 

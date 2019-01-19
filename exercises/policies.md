@@ -14,5 +14,3 @@ spec:
   providerUrl: http://white_list_registry/
   blacklist: false
 ```
-
-#### 

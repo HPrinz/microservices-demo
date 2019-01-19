@@ -15,47 +15,42 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: recommendationservice
+  name: paymentservice
 spec:
   template:
     metadata:
       labels:
-        app: recommendationservice
+        app: paymentservice
     spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/hanna-prinz/recommendationservice
+        image: paymentservice
         ports:
-        - containerPort: 8080
+        - containerPort: 50051
         readinessProbe:
-          periodSeconds: 5
           exec:
-            command: ["/bin/grpc_health_probe", "-addr=:8080"]
+            command: ["/bin/grpc_health_probe", "-addr=:50051"]
         livenessProbe:
-          periodSeconds: 5
           exec:
-            command: ["/bin/grpc_health_probe", "-addr=:8080"]
-        env:
-        - name: PRODUCT_CATALOG_SERVICE_ADDR
-          value: "productcatalogservice:3550"
+            command: ["/bin/grpc_health_probe", "-addr=:50051"]
         resources:
           requests:
             cpu: 100m
-            memory: 220Mi
+            memory: 64Mi
           limits:
             cpu: 200m
-            memory: 450Mi
+            memory: 128Mi
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: recommendationservice
+  name: paymentservice
 spec:
   type: ClusterIP
   selector:
-    app: recommendationservice
+    app: paymentservice
   ports:
   - name: grpc
-    port: 8080
-    targetPort: 8080
+    port: 50051
+    targetPort: 50051

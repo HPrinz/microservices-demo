@@ -15,47 +15,52 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: recommendationservice
+  name: cartservice
 spec:
   template:
     metadata:
       labels:
-        app: recommendationservice
+        app: cartservice
     spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/hanna-prinz/recommendationservice
+        image: cartservice
         ports:
-        - containerPort: 8080
-        readinessProbe:
-          periodSeconds: 5
-          exec:
-            command: ["/bin/grpc_health_probe", "-addr=:8080"]
-        livenessProbe:
-          periodSeconds: 5
-          exec:
-            command: ["/bin/grpc_health_probe", "-addr=:8080"]
+        - containerPort: 7070
         env:
-        - name: PRODUCT_CATALOG_SERVICE_ADDR
-          value: "productcatalogservice:3550"
+        - name: REDIS_ADDR
+          value: "redis-cart:6379"
+        - name: PORT
+          value: "7070"
+        - name: LISTEN_ADDR
+          value: "0.0.0.0"
         resources:
           requests:
-            cpu: 100m
-            memory: 220Mi
-          limits:
             cpu: 200m
-            memory: 450Mi
+            memory: 64Mi
+          limits:
+            cpu: 300m
+            memory: 128Mi
+        readinessProbe:
+          initialDelaySeconds: 15
+          exec:
+            command: ["/bin/grpc_health_probe", "-addr=:7070"]
+        livenessProbe:
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          exec:
+            command: ["/bin/grpc_health_probe", "-addr=:7070"]
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: recommendationservice
+  name: cartservice
 spec:
   type: ClusterIP
   selector:
-    app: recommendationservice
+    app: cartservice
   ports:
   - name: grpc
-    port: 8080
-    targetPort: 8080
+    port: 7070
+    targetPort: 7070

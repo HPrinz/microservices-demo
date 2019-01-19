@@ -2,6 +2,11 @@
 
 [TOC]
 
+**Inhalt:**
+
+- [Standard-Prometheus-Metriken](https://istio.io/docs/reference/config/policy-and-telemetry/metrics/) --> [Details](https://raw.githubusercontent.com/istio/istio/release-1.0/install/kubernetes/helm/istio/charts/mixer/templates/config.yaml)
+- können überschrieben und erweitert werden
+
 #### 1. Prometheus-Adapter
 
 **prometheus** - Konsumiert Metriken und aggregiert sie als konfigurierbare Distributions/Histogramme oder Counter.

@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
         - name: server
-          image: gcr.io/hanna-prinz/checkoutservice
+          image: checkoutservice
           ports:
           - containerPort: 5050
           readinessProbe:
@@ -47,7 +47,7 @@ spec:
           - name: CART_SERVICE_ADDR
             value: "cartservice:7070"
           # - name: JAEGER_SERVICE_ADDR
-          #  value: "jaeger-collector:14268"
+          #   value: "jaeger-collector:14268"
           resources:
             requests:
               cpu: 100m

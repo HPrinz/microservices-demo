@@ -1,0 +1,72 @@
+apiVersion: "config.istio.io/v1alpha2"
+kind: stackdriver
+metadata:
+  name: handler
+  namespace: istio-system
+spec:
+  # We'll use the default value from the adapter, once per minute, so we don't need to supply a value.
+  # pushInterval: 1m
+  # Must be supplied for the Stackdriver adapter to work
+  project_id: "hanna-prinz"
+  # One of the following must be set; the preferred method is `appCredentials`, which corresponds to
+  # Google Application Default Credentials.
+  # If none is provided we default to app credentials.
+  # appCredentials:
+  # apiKey:
+  # serviceAccountPath:
+  # Describes how to map Istio logs into Stackdriver.
+  logInfo:
+    accesslog.logentry.istio-system:
+      payloadTemplate: '{{or (.sourceIp) "-"}} - {{or (.sourceUser) "-"}} [{{or (.timestamp.Format "02/Jan/2006:15:04:05 -0700") "-"}}] "{{or (.method) "-"}} {{or (.url) "-"}} {{or (.protocol) "-"}}" {{or (.responseCode) "-"}} {{or (.responseSize) "-"}}'
+      httpMapping:
+        url: url
+        status: responseCode
+        requestSize: requestSize
+        responseSize: responseSize
+        latency: latency
+        localIp: sourceIp
+        remoteIp: destinationIp
+        method: method
+        userAgent: userAgent
+        referer: referer
+      labelNames:
+      - sourceIp
+      - destinationIp
+      - sourceService
+      - sourceUser
+      - sourceNamespace
+      - destinationIp
+      - destinationService
+      - destinationNamespace
+      - apiClaims
+      - apiKey
+      - protocol
+      - method
+      - url
+      - responseCode
+      - responseSize
+      - requestSize
+      - latency
+      - connectionMtls
+      - userAgent
+      - responseTimestamp
+      - receivedBytes
+      - sentBytes
+      - referer
+      sinkInfo:
+        id: '<sink_id>'
+        destination: '<sink_destination>'
+        filter: '<log_filter>'
+---
+apiVersion: "config.istio.io/v1alpha2"
+kind: rule
+metadata:
+  name: stackdriver
+  namespace: istio-system
+spec:
+  match: "true" # If omitted match is true.
+  actions:
+  - handler: handler.stackdriver
+    instances:
+    - accesslog.logentry
+---

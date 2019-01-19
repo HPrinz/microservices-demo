@@ -1,5 +1,10 @@
 ## Logging
 
+**Inhalt:**
+
+- Automatische Erzeugung von definierten Logeinträgen
+- Auf die Standardausgabe (stdio) und nach Fluentd
+
 #### 1. Logeintrag definieren 
 
 ```bash
@@ -62,7 +67,7 @@ metadata:
 spec:
   match: destination.labels["app"]!="telemetry" # match only for non-telemetry-calls
   actions:
-   - handler: newhandler.stdio
+   - handler: stdio-handler.stdio
      instances:
      - newlog.logentry
 ```
