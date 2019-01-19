@@ -23,6 +23,9 @@
         <div class="py-5 bg-light">
             <div class="container">
             <div class="row">
+                {{ with $.ad }}{{ template "text_ad" . }}{{ end}}
+            </div>
+            <div class="row">
                 {{ range $.products }}
                 <div class="col-md-4">
                     <div class="card mb-4 box-shadow">
@@ -51,9 +54,7 @@
                 </div>
                 {{ end }}
             </div>
-            <div class="row">
-                {{ with $.ad }}{{ template "text_ad" . }}{{ end}}
-            </div>
+            
             </div>
         </div>
     </main>
