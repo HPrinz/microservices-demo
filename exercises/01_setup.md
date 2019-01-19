@@ -36,7 +36,11 @@ Linux/Windows [--> follow me](https://docs.helm.sh/using_helm/#installing-helm)
 
 #### 3. Cluster aufsetzen
 
-GKE Cluster
+**Option 1: GKE Cluster**
+
+> TODO: gcloud auth
+
+
 
 ```shell
 # set region & zone
@@ -59,7 +63,7 @@ kubectl create clusterrolebinding cluster-admin-binding \
     --user=$(gcloud config get-value core/account)
 ```
 
-Minikube
+**Option 2: Minikube** 
 
 ```
 TODO
@@ -85,68 +89,29 @@ kubectl apply -f $ISTIO_WORKSHOP/istio.yaml
 kubectl label namespace default istio-injection=enabled
 ```
 
-#### 5. Port-forwarding von Prometheus, Jaeger und Istio
-
-Wiederhole diesen Befehl so lange, bis alle Pods den Status `Running`  oder `Completed` haben
+**Wiederhole** diesen Befehl so lange, bis alle Pods den Status `Running`  oder `Completed` haben
 
 ```shell
-kubectl get pods -n istio-system
+kubectl  -n istio-system get pods
 ```
 
 Das sollte dann so aussehen:
 
-```
-NAME                                      READY     STATUS      RESTARTS   AGE
-grafana-774bf8cb47-9sk6z                  1/1       Running     0          5m
-istio-citadel-cb5b884db-2xmfv             1/1       Running     0          5m
-istio-cleanup-secrets-v29zz               0/1       Completed   0          6m
-istio-egressgateway-dc49b5b47-bbmmc       1/1       Running     0          6m
-istio-galley-5b494c7f5-5mj96              1/1       Running     0          6m
-istio-grafana-post-install-vkr5q          0/1       Completed   0          6m
-istio-ingressgateway-64cb7d5f6d-jgzgg     1/1       Running     0          5m
-istio-pilot-85747ff88-vhnhx               2/2       Running     0          5m
-istio-policy-858884d9c-4fdr5              2/2       Running     0          5m
-istio-security-post-install-gbw46         0/1       Completed   0          6m
-istio-sidecar-injector-7f4c7db98c-6jhxf   1/1       Running     0          5m
-istio-telemetry-748d58f6c5-w5svq          2/2       Running     0          5m
-istio-tracing-ff94688bb-qj9f2             1/1       Running     0          5m
-kiali-7cdd89797-4pmmf                     1/1       Running     0          5m
-prometheus-f556886b8-bxc5r                1/1       Running     0          5m
-```
-
-Führe diese Befehle aus, um die **Ports im Cluster auf deinen localhost umzuleiten**:
-
-```
-kubectl -n istio-system port-forward deployment/istio-tracing 16686:16686 &
-kubectl -n istio-system port-forward deployment/grafana 3000:3000 &
-kubectl -n istio-system port-forward deployment/kiali 20001:20001 &
-open http://localhost:20001
-```
-
-Dann sollte sich dein Browser mit http://localhost:20001 öffnen. Gib diese Nutzerdaten ein:
-
-| Username     | admin     |
-| ------------ | --------- |
-| **Passwort** | **admin** |
-
-Die Oberfläche sollte dann so aussehen:
-
-![Kiali](images/01_setup_kiali_1.png)
-
-Öffne außerdem http://localhost:3000 und http://localhost:16686
+![](images/01_setup_istio_ready.png)
 
 
 
-#### 5. Install Hipstershop
-
-```
-cd $ISTIO_WORKSHOP/hipstershop
-kubectl apply -f ./kubernetes-manifests-local
-```
 
 
+**FERTIG!**
 
-```
-kubectl apply -f ./istio-manifests
-```
+Nun folgendes:
+
+1. Trag ein wie weit du bist: vielleicht kannst du jemandem helfen
+
+   > `TODO: Realtimeboard / Trello?`
+
+2. Im nächsten Schritt installieren wie eine Beispielanwendung mit der wir die Mesh-Funktionionen ausprobieren. --> Hier geht's weiter
+
+   > TODO: Link
 
