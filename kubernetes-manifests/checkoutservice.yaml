@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
         - name: server
-          image: gcr.io/hanna-prinz/checkoutservice
+          image: gcr.io/hanna-prinz/checkoutservice:d5a38ef-dirty-b6c460e
           ports:
           - containerPort: 5050
           readinessProbe:

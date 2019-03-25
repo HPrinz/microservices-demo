@@ -59,11 +59,11 @@
 
 [[constraint]]
   name = "github.com/grpc-ecosystem/go-grpc-middleware"
-  branch = "master"
+  version = "v1.0.0"
 
 [[constraint]]
   name = "github.com/opentracing/opentracing-go"
-  branch = "master"
+  version = "1.0.2"
 
 [prune]
   go-tests = true
