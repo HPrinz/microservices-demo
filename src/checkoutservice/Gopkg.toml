@@ -57,6 +57,14 @@
   name = "google.golang.org/grpc"
   version = "=1.14.0"
 
+[[constraint]]
+  name = "github.com/grpc-ecosystem/go-grpc-middleware"
+  branch = "master"
+
+[[constraint]]
+  name = "github.com/opentracing/opentracing-go"
+  branch = "master"
+
 [prune]
   go-tests = true
   unused-packages = true
