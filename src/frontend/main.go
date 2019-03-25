@@ -33,6 +33,9 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc"
+
+	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
+	ot "github.com/opentracing/opentracing-go"
 )
 
 const (
@@ -251,7 +254,13 @@ func mustConnGRPC(ctx context.Context, conn **grpc.ClientConn, addr string) {
 	*conn, err = grpc.DialContext(ctx, addr,
 		grpc.WithInsecure(),
 		grpc.WithTimeout(time.Second*3),
-		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}))
+		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}),
+		grpc.WithStreamInterceptor(
+			grpc_opentracing.StreamClientInterceptor(
+				grpc_opentracing.WithTracer(ot.GlobalTracer()))),
+		grpc.WithUnaryInterceptor(
+			grpc_opentracing.UnaryClientInterceptor(
+				grpc_opentracing.WithTracer(ot.GlobalTracer()))))
 	if err != nil {
 		panic(errors.Wrapf(err, "grpc: failed to connect %s", addr))
 	}

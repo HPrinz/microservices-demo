@@ -105,12 +105,37 @@
   version = "v1.6.2"
 
 [[projects]]
+  digest = "1:cbeb5c30b75203b493b8b07b69b4d1859f2a3665746d1ee411f81d8a9c92ef80"
+  name = "github.com/grpc-ecosystem/go-grpc-middleware"
+  packages = [
+    ".",
+    "tags",
+    "tracing/opentracing",
+    "util/metautils",
+  ]
+  pruneopts = "UT"
+  revision = "c250d6563d4d4c20252cd865923440e829844f4e"
+  version = "v1.0.0"
+
+[[projects]]
   digest = "1:0a69a1c0db3591fcefb47f115b224592c8dfa4368b7ba9fae509d5e16cdc95c8"
   name = "github.com/konsorten/go-windows-terminal-sequences"
   packages = ["."]
   pruneopts = "UT"
   revision = "5c8c8bd35d3832f5d134ae1e1e375b69a4d25242"
   version = "v1.0.1"
+
+[[projects]]
+  digest = "1:11e62d6050198055e6cd87ed57e5d8c669e84f839c16e16f192374d913d1a70d"
+  name = "github.com/opentracing/opentracing-go"
+  packages = [
+    ".",
+    "ext",
+    "log",
+  ]
+  pruneopts = "UT"
+  revision = "659c90643e714681897ec2521c60567dd21da733"
+  version = "v1.1.0"
 
 [[projects]]
   digest = "1:40e195917a951a8bf867cd05de2a46aaf1806c50cf92eebf4c16f78cd196f747"
@@ -345,6 +370,8 @@
     "github.com/golang/protobuf/proto",
     "github.com/google/uuid",
     "github.com/gorilla/mux",
+    "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing",
+    "github.com/opentracing/opentracing-go",
     "github.com/pkg/errors",
     "github.com/sirupsen/logrus",
     "go.opencensus.io/exporter/jaeger",
