@@ -27,7 +27,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc/metadata"
 
 	pb "github.com/GoogleCloudPlatform/microservices-demo/src/frontend/genproto"
 	"github.com/GoogleCloudPlatform/microservices-demo/src/frontend/money"
@@ -43,37 +42,17 @@ var (
 func (fe *frontendServer) homeHandler(w http.ResponseWriter, r *http.Request) {
 	log := r.Context().Value(ctxKeyLog{}).(logrus.FieldLogger)
 	log.WithField("currency", currentCurrency(r)).Info("home")
-
-	ctx := r.Context()
-	md, ok := metadata.FromIncomingContext(ctx)
-	log.Infof("ASJKFHGHJ ok?=%q md=%q", ok, md)
-
-	header := [7]string{"x-request-id", "x-b3-traceid", "x-b3-spanid", "x-b3-parentspanid", "x-b3-sampled", "x-b3-flags", "x-ot-span-context"}
-
-	for i := 0; i < len(header); i++ {
-		head := header[i]
-		if len(md.Get(head)) > 0 {
-			ctx = metadata.AppendToOutgoingContext(ctx, head, md.Get(head)[0])
-			log.Infof("appended %q - %q", head, md.Get(head)[0])
-		}
-	}
-
-	mdo, oko := metadata.FromOutgoingContext(ctx)
-	log.Infof("Oooooooo ok?=%q md=%q", oko, mdo)
-
-	ctx = metadata.NewOutgoingContext(context.Background(), mdo)
-
-	currencies, err := fe.getCurrencies(ctx)
+	currencies, err := fe.getCurrencies(r.Context())
 	if err != nil {
 		renderHTTPError(log, r, w, errors.Wrap(err, "could not retrieve currencies"), http.StatusInternalServerError)
 		return
 	}
-	products, err := fe.getProducts(ctx)
+	products, err := fe.getProducts(r.Context())
 	if err != nil {
 		renderHTTPError(log, r, w, errors.Wrap(err, "could not retrieve products"), http.StatusInternalServerError)
 		return
 	}
-	cart, err := fe.getCart(ctx, sessionID(r))
+	cart, err := fe.getCart(r.Context(), sessionID(r))
 	if err != nil {
 		renderHTTPError(log, r, w, errors.Wrap(err, "could not retrieve cart"), http.StatusInternalServerError)
 		return
@@ -85,7 +64,7 @@ func (fe *frontendServer) homeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	ps := make([]productView, len(products))
 	for i, p := range products {
-		price, err := fe.convertCurrency(ctx, p.GetPriceUsd(), currentCurrency(r))
+		price, err := fe.convertCurrency(r.Context(), p.GetPriceUsd(), currentCurrency(r))
 		if err != nil {
 			renderHTTPError(log, r, w, errors.Wrapf(err, "failed to do currency conversion for product %s", p.GetId()), http.StatusInternalServerError)
 			return
@@ -95,40 +74,20 @@ func (fe *frontendServer) homeHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err := templates.ExecuteTemplate(w, "home", map[string]interface{}{
 		"session_id":    sessionID(r),
-		"request_id":    ctx.Value(ctxKeyRequestID{}),
+		"request_id":    r.Context().Value(ctxKeyRequestID{}),
 		"user_currency": currentCurrency(r),
 		"currencies":    currencies,
 		"products":      ps,
 		"cart_size":     len(cart),
 		"banner_color":  os.Getenv("BANNER_COLOR"), // illustrates canary deployments
-		"ad":            fe.chooseAd(ctx, []string{}, log),
+		"ad":            fe.chooseAd(r.Context(), []string{}, log),
 	}); err != nil {
 		log.Error(err)
 	}
 }
 
 func (fe *frontendServer) productHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	log := ctx.Value(ctxKeyLog{}).(logrus.FieldLogger)
-
-	md, ok := metadata.FromIncomingContext(ctx)
-	log.Infof("ASJKFHGHJ ok?=%q md=%q", ok, md)
-
-	header := [7]string{"x-request-id", "x-b3-traceid", "x-b3-spanid", "x-b3-parentspanid", "x-b3-sampled", "x-b3-flags", "x-ot-span-context"}
-
-	for i := 0; i < len(header); i++ {
-		head := header[i]
-		if len(md.Get(head)) > 0 {
-			ctx = metadata.AppendToOutgoingContext(ctx, head, md.Get(head)[0])
-			log.Infof("appended %q - %q", head, md.Get(head)[0])
-		}
-	}
-
-	mdo, oko := metadata.FromOutgoingContext(ctx)
-	log.Infof("Oooooooo ok?=%q md=%q", oko, mdo)
-
-	ctx = metadata.NewOutgoingContext(context.Background(), mdo)
+	log := r.Context().Value(ctxKeyLog{}).(logrus.FieldLogger)
 	id := mux.Vars(r)["id"]
 	if id == "" {
 		renderHTTPError(log, r, w, errors.New("product id not specified"), http.StatusBadRequest)
@@ -137,30 +96,30 @@ func (fe *frontendServer) productHandler(w http.ResponseWriter, r *http.Request)
 	log.WithField("id", id).WithField("currency", currentCurrency(r)).
 		Debug("serving product page")
 
-	p, err := fe.getProduct(ctx, id)
+	p, err := fe.getProduct(r.Context(), id)
 	if err != nil {
 		renderHTTPError(log, r, w, errors.Wrap(err, "could not retrieve product"), http.StatusInternalServerError)
 		return
 	}
-	currencies, err := fe.getCurrencies(ctx)
+	currencies, err := fe.getCurrencies(r.Context())
 	if err != nil {
 		renderHTTPError(log, r, w, errors.Wrap(err, "could not retrieve currencies"), http.StatusInternalServerError)
 		return
 	}
 
-	cart, err := fe.getCart(ctx, sessionID(r))
+	cart, err := fe.getCart(r.Context(), sessionID(r))
 	if err != nil {
 		renderHTTPError(log, r, w, errors.Wrap(err, "could not retrieve cart"), http.StatusInternalServerError)
 		return
 	}
 
-	price, err := fe.convertCurrency(ctx, p.GetPriceUsd(), currentCurrency(r))
+	price, err := fe.convertCurrency(r.Context(), p.GetPriceUsd(), currentCurrency(r))
 	if err != nil {
 		renderHTTPError(log, r, w, errors.Wrap(err, "failed to convert currency"), http.StatusInternalServerError)
 		return
 	}
 
-	recommendations, err := fe.getRecommendations(ctx, sessionID(r), []string{id})
+	recommendations, err := fe.getRecommendations(r.Context(), sessionID(r), []string{id})
 	if err != nil {
 		renderHTTPError(log, r, w, errors.Wrap(err, "failed to get product recommendations"), http.StatusInternalServerError)
 		return
@@ -173,8 +132,8 @@ func (fe *frontendServer) productHandler(w http.ResponseWriter, r *http.Request)
 
 	if err := templates.ExecuteTemplate(w, "product", map[string]interface{}{
 		"session_id":      sessionID(r),
-		"request_id":      ctx.Value(ctxKeyRequestID{}),
-		"ad":              fe.chooseAd(ctx, p.Categories, log),
+		"request_id":      r.Context().Value(ctxKeyRequestID{}),
+		"ad":              fe.chooseAd(r.Context(), p.Categories, log),
 		"user_currency":   currentCurrency(r),
 		"currencies":      currencies,
 		"product":         product,
@@ -186,27 +145,7 @@ func (fe *frontendServer) productHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (fe *frontendServer) addToCartHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	log := ctx.Value(ctxKeyLog{}).(logrus.FieldLogger)
-
-	md, ok := metadata.FromIncomingContext(ctx)
-	log.Infof("ASJKFHGHJ ok?=%q md=%q", ok, md)
-
-	header := [7]string{"x-request-id", "x-b3-traceid", "x-b3-spanid", "x-b3-parentspanid", "x-b3-sampled", "x-b3-flags", "x-ot-span-context"}
-
-	for i := 0; i < len(header); i++ {
-		head := header[i]
-		if len(md.Get(head)) > 0 {
-			ctx = metadata.AppendToOutgoingContext(ctx, head, md.Get(head)[0])
-			log.Infof("appended %q - %q", head, md.Get(head)[0])
-		}
-	}
-
-	mdo, oko := metadata.FromOutgoingContext(ctx)
-	log.Infof("Oooooooo ok?=%q md=%q", oko, mdo)
-
-	ctx = metadata.NewOutgoingContext(context.Background(), mdo)
-
+	log := r.Context().Value(ctxKeyLog{}).(logrus.FieldLogger)
 	quantity, _ := strconv.ParseUint(r.FormValue("quantity"), 10, 32)
 	productID := r.FormValue("product_id")
 	if productID == "" || quantity == 0 {
@@ -215,13 +154,13 @@ func (fe *frontendServer) addToCartHandler(w http.ResponseWriter, r *http.Reques
 	}
 	log.WithField("product", productID).WithField("quantity", quantity).Debug("adding to cart")
 
-	p, err := fe.getProduct(ctx, productID)
+	p, err := fe.getProduct(r.Context(), productID)
 	if err != nil {
 		renderHTTPError(log, r, w, errors.Wrap(err, "could not retrieve product"), http.StatusInternalServerError)
 		return
 	}
 
-	if err := fe.insertCart(ctx, sessionID(r), p.GetId(), int32(quantity)); err != nil {
+	if err := fe.insertCart(r.Context(), sessionID(r), p.GetId(), int32(quantity)); err != nil {
 		renderHTTPError(log, r, w, errors.Wrap(err, "failed to add to cart"), http.StatusInternalServerError)
 		return
 	}
@@ -230,30 +169,10 @@ func (fe *frontendServer) addToCartHandler(w http.ResponseWriter, r *http.Reques
 }
 
 func (fe *frontendServer) emptyCartHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	log := ctx.Value(ctxKeyLog{}).(logrus.FieldLogger)
-
-	md, ok := metadata.FromIncomingContext(ctx)
-	log.Infof("ASJKFHGHJ ok?=%q md=%q", ok, md)
-
-	header := [7]string{"x-request-id", "x-b3-traceid", "x-b3-spanid", "x-b3-parentspanid", "x-b3-sampled", "x-b3-flags", "x-ot-span-context"}
-
-	for i := 0; i < len(header); i++ {
-		head := header[i]
-		if len(md.Get(head)) > 0 {
-			ctx = metadata.AppendToOutgoingContext(ctx, head, md.Get(head)[0])
-			log.Infof("appended %q - %q", head, md.Get(head)[0])
-		}
-	}
-
-	mdo, oko := metadata.FromOutgoingContext(ctx)
-	log.Infof("Oooooooo ok?=%q md=%q", oko, mdo)
-
-	ctx = metadata.NewOutgoingContext(context.Background(), mdo)
-
+	log := r.Context().Value(ctxKeyLog{}).(logrus.FieldLogger)
 	log.Debug("emptying cart")
 
-	if err := fe.emptyCart(ctx, sessionID(r)); err != nil {
+	if err := fe.emptyCart(r.Context(), sessionID(r)); err != nil {
 		renderHTTPError(log, r, w, errors.Wrap(err, "failed to empty cart"), http.StatusInternalServerError)
 		return
 	}
@@ -262,46 +181,26 @@ func (fe *frontendServer) emptyCartHandler(w http.ResponseWriter, r *http.Reques
 }
 
 func (fe *frontendServer) viewCartHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	log := ctx.Value(ctxKeyLog{}).(logrus.FieldLogger)
-
-	md, ok := metadata.FromIncomingContext(ctx)
-	log.Infof("ASJKFHGHJ ok?=%q md=%q", ok, md)
-
-	header := [7]string{"x-request-id", "x-b3-traceid", "x-b3-spanid", "x-b3-parentspanid", "x-b3-sampled", "x-b3-flags", "x-ot-span-context"}
-
-	for i := 0; i < len(header); i++ {
-		head := header[i]
-		if len(md.Get(head)) > 0 {
-			ctx = metadata.AppendToOutgoingContext(ctx, head, md.Get(head)[0])
-			log.Infof("appended %q - %q", head, md.Get(head)[0])
-		}
-	}
-
-	mdo, oko := metadata.FromOutgoingContext(ctx)
-	log.Infof("Oooooooo ok?=%q md=%q", oko, mdo)
-
-	ctx = metadata.NewOutgoingContext(context.Background(), mdo)
-
+	log := r.Context().Value(ctxKeyLog{}).(logrus.FieldLogger)
 	log.Debug("view user cart")
-	currencies, err := fe.getCurrencies(ctx)
+	currencies, err := fe.getCurrencies(r.Context())
 	if err != nil {
 		renderHTTPError(log, r, w, errors.Wrap(err, "could not retrieve currencies"), http.StatusInternalServerError)
 		return
 	}
-	cart, err := fe.getCart(ctx, sessionID(r))
+	cart, err := fe.getCart(r.Context(), sessionID(r))
 	if err != nil {
 		renderHTTPError(log, r, w, errors.Wrap(err, "could not retrieve cart"), http.StatusInternalServerError)
 		return
 	}
 
-	recommendations, err := fe.getRecommendations(ctx, sessionID(r), cartIDs(cart))
+	recommendations, err := fe.getRecommendations(r.Context(), sessionID(r), cartIDs(cart))
 	if err != nil {
 		renderHTTPError(log, r, w, errors.Wrap(err, "failed to get product recommendations"), http.StatusInternalServerError)
 		return
 	}
 
-	shippingCost, err := fe.getShippingQuote(ctx, cart, currentCurrency(r))
+	shippingCost, err := fe.getShippingQuote(r.Context(), cart, currentCurrency(r))
 	if err != nil {
 		renderHTTPError(log, r, w, errors.Wrap(err, "failed to get shipping quote"), http.StatusInternalServerError)
 		return
@@ -315,12 +214,12 @@ func (fe *frontendServer) viewCartHandler(w http.ResponseWriter, r *http.Request
 	items := make([]cartItemView, len(cart))
 	totalPrice := pb.Money{CurrencyCode: currentCurrency(r)}
 	for i, item := range cart {
-		p, err := fe.getProduct(ctx, item.GetProductId())
+		p, err := fe.getProduct(r.Context(), item.GetProductId())
 		if err != nil {
 			renderHTTPError(log, r, w, errors.Wrapf(err, "could not retrieve product #%s", item.GetProductId()), http.StatusInternalServerError)
 			return
 		}
-		price, err := fe.convertCurrency(ctx, p.GetPriceUsd(), currentCurrency(r))
+		price, err := fe.convertCurrency(r.Context(), p.GetPriceUsd(), currentCurrency(r))
 		if err != nil {
 			renderHTTPError(log, r, w, errors.Wrapf(err, "could not convert currency for product #%s", item.GetProductId()), http.StatusInternalServerError)
 			return
@@ -338,7 +237,7 @@ func (fe *frontendServer) viewCartHandler(w http.ResponseWriter, r *http.Request
 	year := time.Now().Year()
 	if err := templates.ExecuteTemplate(w, "cart", map[string]interface{}{
 		"session_id":       sessionID(r),
-		"request_id":       ctx.Value(ctxKeyRequestID{}),
+		"request_id":       r.Context().Value(ctxKeyRequestID{}),
 		"user_currency":    currentCurrency(r),
 		"currencies":       currencies,
 		"recommendations":  recommendations,
@@ -353,27 +252,7 @@ func (fe *frontendServer) viewCartHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (fe *frontendServer) placeOrderHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	log := ctx.Value(ctxKeyLog{}).(logrus.FieldLogger)
-
-	md, ok := metadata.FromIncomingContext(ctx)
-	log.Infof("ASJKFHGHJ ok?=%q md=%q", ok, md)
-
-	header := [7]string{"x-request-id", "x-b3-traceid", "x-b3-spanid", "x-b3-parentspanid", "x-b3-sampled", "x-b3-flags", "x-ot-span-context"}
-
-	for i := 0; i < len(header); i++ {
-		head := header[i]
-		if len(md.Get(head)) > 0 {
-			ctx = metadata.AppendToOutgoingContext(ctx, head, md.Get(head)[0])
-			log.Infof("appended %q - %q", head, md.Get(head)[0])
-		}
-	}
-
-	mdo, oko := metadata.FromOutgoingContext(ctx)
-	log.Infof("Oooooooo ok?=%q md=%q", oko, mdo)
-
-	ctx = metadata.NewOutgoingContext(context.Background(), mdo)
-
+	log := r.Context().Value(ctxKeyLog{}).(logrus.FieldLogger)
 	log.Debug("placing order")
 
 	var (
@@ -390,7 +269,7 @@ func (fe *frontendServer) placeOrderHandler(w http.ResponseWriter, r *http.Reque
 	)
 
 	order, err := pb.NewCheckoutServiceClient(fe.checkoutSvcConn).
-		PlaceOrder(ctx, &pb.PlaceOrderRequest{
+		PlaceOrder(r.Context(), &pb.PlaceOrderRequest{
 			Email: email,
 			CreditCard: &pb.CreditCardInfo{
 				CreditCardNumber:          ccNumber,
@@ -413,7 +292,7 @@ func (fe *frontendServer) placeOrderHandler(w http.ResponseWriter, r *http.Reque
 	log.WithField("order", order.GetOrder().GetOrderId()).Info("order placed")
 
 	order.GetOrder().GetItems()
-	recommendations, _ := fe.getRecommendations(ctx, sessionID(r), nil)
+	recommendations, _ := fe.getRecommendations(r.Context(), sessionID(r), nil)
 
 	totalPaid := *order.GetOrder().GetShippingCost()
 	for _, v := range order.GetOrder().GetItems() {
@@ -422,7 +301,7 @@ func (fe *frontendServer) placeOrderHandler(w http.ResponseWriter, r *http.Reque
 
 	if err := templates.ExecuteTemplate(w, "order", map[string]interface{}{
 		"session_id":      sessionID(r),
-		"request_id":      ctx.Value(ctxKeyRequestID{}),
+		"request_id":      r.Context().Value(ctxKeyRequestID{}),
 		"user_currency":   currentCurrency(r),
 		"order":           order.GetOrder(),
 		"total_paid":      &totalPaid,
@@ -433,27 +312,7 @@ func (fe *frontendServer) placeOrderHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (fe *frontendServer) logoutHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	log := ctx.Value(ctxKeyLog{}).(logrus.FieldLogger)
-
-	md, ok := metadata.FromIncomingContext(ctx)
-	log.Infof("ASJKFHGHJ ok?=%q md=%q", ok, md)
-
-	header := [7]string{"x-request-id", "x-b3-traceid", "x-b3-spanid", "x-b3-parentspanid", "x-b3-sampled", "x-b3-flags", "x-ot-span-context"}
-
-	for i := 0; i < len(header); i++ {
-		head := header[i]
-		if len(md.Get(head)) > 0 {
-			ctx = metadata.AppendToOutgoingContext(ctx, head, md.Get(head)[0])
-			log.Infof("appended %q - %q", head, md.Get(head)[0])
-		}
-	}
-
-	mdo, oko := metadata.FromOutgoingContext(ctx)
-	log.Infof("Oooooooo ok?=%q md=%q", oko, mdo)
-
-	ctx = metadata.NewOutgoingContext(context.Background(), mdo)
-
+	log := r.Context().Value(ctxKeyLog{}).(logrus.FieldLogger)
 	log.Debug("logging out")
 	for _, c := range r.Cookies() {
 		c.Expires = time.Now().Add(-time.Hour * 24 * 365)
@@ -465,27 +324,7 @@ func (fe *frontendServer) logoutHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (fe *frontendServer) setCurrencyHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	log := ctx.Value(ctxKeyLog{}).(logrus.FieldLogger)
-
-	md, ok := metadata.FromIncomingContext(ctx)
-	log.Infof("ASJKFHGHJ ok?=%q md=%q", ok, md)
-
-	header := [7]string{"x-request-id", "x-b3-traceid", "x-b3-spanid", "x-b3-parentspanid", "x-b3-sampled", "x-b3-flags", "x-ot-span-context"}
-
-	for i := 0; i < len(header); i++ {
-		head := header[i]
-		if len(md.Get(head)) > 0 {
-			ctx = metadata.AppendToOutgoingContext(ctx, head, md.Get(head)[0])
-			log.Infof("appended %q - %q", head, md.Get(head)[0])
-		}
-	}
-
-	mdo, oko := metadata.FromOutgoingContext(ctx)
-	log.Infof("Oooooooo ok?=%q md=%q", oko, mdo)
-
-	ctx = metadata.NewOutgoingContext(context.Background(), mdo)
-
+	log := r.Context().Value(ctxKeyLog{}).(logrus.FieldLogger)
 	cur := r.FormValue("currency_code")
 	log.WithField("curr.new", cur).WithField("curr.old", currentCurrency(r)).
 		Debug("setting currency")
@@ -509,23 +348,6 @@ func (fe *frontendServer) setCurrencyHandler(w http.ResponseWriter, r *http.Requ
 // available. It ignores the error retrieving the ad since it is not critical.
 func (fe *frontendServer) chooseAd(ctx context.Context, ctxKeys []string, log logrus.FieldLogger) *pb.Ad {
 	ads, err := fe.getAd(ctx, ctxKeys)
-	md, ok := metadata.FromIncomingContext(ctx)
-	log.Infof("ASJKFHGHJ ok?=%q md=%q", ok, md)
-
-	header := [7]string{"x-request-id", "x-b3-traceid", "x-b3-spanid", "x-b3-parentspanid", "x-b3-sampled", "x-b3-flags", "x-ot-span-context"}
-
-	for i := 0; i < len(header); i++ {
-		head := header[i]
-		if len(md.Get(head)) > 0 {
-			ctx = metadata.AppendToOutgoingContext(ctx, head, md.Get(head)[0])
-			log.Infof("appended %q - %q", head, md.Get(head)[0])
-		}
-	}
-
-	mdo, oko := metadata.FromOutgoingContext(ctx)
-	log.Infof("Oooooooo ok?=%q md=%q", oko, mdo)
-
-	ctx = metadata.NewOutgoingContext(context.Background(), mdo)
 	if err != nil {
 		log.WithField("error", err).Warn("failed to retrieve ads")
 		return nil
@@ -534,14 +356,13 @@ func (fe *frontendServer) chooseAd(ctx context.Context, ctxKeys []string, log lo
 }
 
 func renderHTTPError(log logrus.FieldLogger, r *http.Request, w http.ResponseWriter, err error, code int) {
-	ctx := r.Context()
 	log.WithField("error", err).Error("request error")
 	errMsg := fmt.Sprintf("%+v", err)
 
 	w.WriteHeader(code)
 	templates.ExecuteTemplate(w, "error", map[string]interface{}{
 		"session_id":  sessionID(r),
-		"request_id":  ctx.Value(ctxKeyRequestID{}),
+		"request_id":  r.Context().Value(ctxKeyRequestID{}),
 		"error":       errMsg,
 		"status_code": code,
 		"status":      http.StatusText(code)})
@@ -556,8 +377,7 @@ func currentCurrency(r *http.Request) string {
 }
 
 func sessionID(r *http.Request) string {
-	ctx := r.Context()
-	v := ctx.Value(ctxKeySessionID{})
+	v := r.Context().Value(ctxKeySessionID{})
 	if v != nil {
 		return v.(string)
 	}
