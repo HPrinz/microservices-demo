@@ -21,23 +21,16 @@ import (
 	"os"
 	"time"
 
-	"cloud.google.com/go/profiler"
-	"contrib.go.opencensus.io/exporter/stackdriver"
 	"github.com/golang/glog"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"go.opencensus.io/exporter/jaeger"
-	"go.opencensus.io/plugin/ocgrpc"
-	"go.opencensus.io/stats/view"
-	"go.opencensus.io/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
 	pb "github.com/HPrinz/microservices-demo/src/checkoutservice/genproto"
 	money "github.com/HPrinz/microservices-demo/src/checkoutservice/money"
-	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
-	ot "github.com/opentracing/opentracing-go"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
@@ -72,8 +65,6 @@ type checkoutService struct {
 }
 
 func main() {
-	go initTracing()
-	go initProfiling("checkoutservice", "1.0.0")
 
 	port := listenPort
 	if os.Getenv("PORT") != "" {
@@ -94,7 +85,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	srv := grpc.NewServer(grpc.StatsHandler(&ocgrpc.ServerHandler{}))
+	srv := grpc.NewServer()
 	pb.RegisterCheckoutServiceServer(srv, svc)
 	healthpb.RegisterHealthServer(srv, svc)
 	log.Infof("starting to listen on tcp: %q", lis.Addr().String())
@@ -105,102 +96,31 @@ func main() {
 // ctx is the incoming gRPC request's context
 // addr is the address for the new outbound request
 func createGRPCConn(ctx context.Context, addr string) (*grpc.ClientConn, error) {
-	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithStreamInterceptor(
-		grpc_opentracing.StreamClientInterceptor(
-			grpc_opentracing.WithTracer(ot.GlobalTracer()))))
-	opts = append(opts, grpc.WithUnaryInterceptor(
-		grpc_opentracing.UnaryClientInterceptor(
-			grpc_opentracing.WithTracer(ot.GlobalTracer()))))
-	opts = append(opts, grpc.WithInsecure())
-	opts = append(opts, grpc.WithStatsHandler(&ocgrpc.ClientHandler{}))
-	conn, err := grpc.DialContext(ctx, addr, opts...)
+	md, ok := metadata.FromIncomingContext(ctx)
+	log.Infof("ASJKFHGHJ ok?=%q md=%q", ok, md)
+
+	header := [7]string{"x-request-id", "x-b3-traceid", "x-b3-spanid", "x-b3-parentspanid", "x-b3-sampled", "x-b3-flags", "x-ot-span-context"}
+
+	mdo1, oko1 := metadata.FromOutgoingContext(ctx)
+	log.Infof("Oooooooo1 ok?=%q md=%q", oko1, mdo1)
+
+	for i := 0; i < len(header); i++ {
+		head := header[i]
+		if len(md.Get(head)) > 0 {
+			ctx = metadata.AppendToOutgoingContext(ctx, head, md.Get(head)[0])
+			log.Infof("appended %q", head)
+		}
+	}
+
+	mdo, oko := metadata.FromOutgoingContext(ctx)
+	log.Infof("Oooooooo ok?=%q md=%q", oko, mdo)
+
+	conn, err := grpc.DialContext(ctx, addr, grpc.WithInsecure())
 	if err != nil {
 		glog.Error("Failed to connect to application addr: ", err)
 		return nil, err
 	}
 	return conn, nil
-}
-
-func initJaegerTracing() {
-	svcAddr := os.Getenv("JAEGER_SERVICE_ADDR")
-	if svcAddr == "" {
-		log.Info("jaeger initialization disabled.")
-		return
-	}
-
-	// Register the Jaeger exporter to be able to retrieve
-	// the collected spans.
-	exporter, err := jaeger.NewExporter(jaeger.Options{
-		Endpoint: fmt.Sprintf("http://%s", svcAddr),
-		Process: jaeger.Process{
-			ServiceName: "checkoutservice",
-		},
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
-	trace.RegisterExporter(exporter)
-	log.Info("jaeger initialization completed.")
-}
-
-func initStats(exporter *stackdriver.Exporter) {
-	view.SetReportingPeriod(60 * time.Second)
-	view.RegisterExporter(exporter)
-	if err := view.Register(ocgrpc.DefaultServerViews...); err != nil {
-		log.Warn("Error registering default server views")
-	} else {
-		log.Info("Registered default server views")
-	}
-}
-
-func initStackDriverTracing() {
-	// TODO(ahmetb) this method is duplicated in other microservices using Go
-	// since they are not sharing packages.
-	for i := 1; i <= 3; i++ {
-		exporter, err := stackdriver.NewExporter(stackdriver.Options{})
-		if err != nil {
-			log.Infof("failed to initialize stackdriver exporter: %+v", err)
-		} else {
-			trace.RegisterExporter(exporter)
-			log.Info("registered stackdriver tracing")
-
-			// Register the views to collect server stats.
-			initStats(exporter)
-			return
-		}
-		d := time.Second * 10 * time.Duration(i)
-		log.Infof("sleeping %v to retry initializing stackdriver exporter", d)
-		time.Sleep(d)
-	}
-	log.Warn("could not initialize stackdriver exporter after retrying, giving up")
-}
-
-func initTracing() {
-	initJaegerTracing()
-	initStackDriverTracing()
-}
-
-func initProfiling(service, version string) {
-	// TODO(ahmetb) this method is duplicated in other microservices using Go
-	// since they are not sharing packages.
-	for i := 1; i <= 3; i++ {
-		if err := profiler.Start(profiler.Config{
-			Service:        service,
-			ServiceVersion: version,
-			// ProjectID must be set if not running on GCP.
-			// ProjectID: "my-project",
-		}); err != nil {
-			log.Warnf("failed to start profiler: %+v", err)
-		} else {
-			log.Info("started stackdriver profiler")
-			return
-		}
-		d := time.Second * 10 * time.Duration(i)
-		log.Infof("sleeping %v to retry initializing stackdriver profiler", d)
-		time.Sleep(d)
-	}
-	log.Warn("could not initialize stackdriver profiler after retrying, giving up")
 }
 
 func mustMapEnv(target *string, envKey string) {

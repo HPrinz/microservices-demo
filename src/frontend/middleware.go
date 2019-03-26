@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 )
 
 type ctxKeyLog struct{}
@@ -56,8 +57,6 @@ func (r *responseRecorder) WriteHeader(statusCode int) {
 func (lh *logHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	requestID, _ := uuid.NewRandom()
-	ctx = context.WithValue(ctx, ctxKeyRequestID{}, requestID.String())
-
 	start := time.Now()
 	rr := &responseRecorder{w: w}
 	log := lh.log.WithFields(logrus.Fields{
@@ -65,6 +64,10 @@ func (lh *logHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		"http.req.method": r.Method,
 		"http.req.id":     requestID.String(),
 	})
+
+	ctx = context.WithValue(ctx, ctxKeyRequestID{}, requestID.String())
+	log.Info("aaaaaaaaaa", r.Header)
+
 	if v, ok := r.Context().Value(ctxKeySessionID{}).(string); ok {
 		log = log.WithField("session", v)
 	}
@@ -77,6 +80,26 @@ func (lh *logHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	ctx = context.WithValue(ctx, ctxKeyLog{}, log)
+
+	md := r.Header
+	log.Infof("ASJKFHGHJ md=%q", md)
+
+	header := [7]string{"X-Request-Id", "X-B3-Traceid", "X-B3-Spanid", "X-B3-Parentspanid", "X-B3-Sampled", "X-B3-Flags", "X-Ot-Span-Context"}
+
+	for i := 0; i < len(header); i++ {
+		head := header[i]
+		if len(md.Get(head)) > 0 {
+			ctx = metadata.AppendToOutgoingContext(ctx, head, md.Get(head))
+			log.Infof("appended %q - %q", head, md.Get(head))
+		}
+	}
+
+	mdo, oko := metadata.FromOutgoingContext(ctx)
+	log.Infof("Oooooooo md=%q", mdo)
+	print(oko)
+
+	//ctx = metadata.NewOutgoingContext(context.Background(), mdo)
+
 	r = r.WithContext(ctx)
 	lh.next.ServeHTTP(rr, r)
 }
