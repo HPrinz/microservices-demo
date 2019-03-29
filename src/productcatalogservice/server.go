@@ -31,12 +31,9 @@ import (
 	pb "github.com/HPrinz/microservices-demo/src/productcatalogservice/genproto"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
-	"cloud.google.com/go/profiler"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/sirupsen/logrus"
 	"go.opencensus.io/plugin/ocgrpc"
-	"go.opencensus.io/stats/view"
-	"go.opencensus.io/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -72,8 +69,6 @@ func init() {
 }
 
 func main() {
-	go initTracing()
-	go initProfiling("productcatalogservice", "1.0.0")
 	flag.Parse()
 
 	// set injected latency
@@ -120,87 +115,6 @@ func run(port int) string {
 	healthpb.RegisterHealthServer(srv, svc)
 	go srv.Serve(l)
 	return l.Addr().String()
-}
-
-func initJaegerTracing() {
-	svcAddr := os.Getenv("JAEGER_SERVICE_ADDR")
-	if svcAddr == "" {
-		log.Info("jaeger initialization disabled.")
-		return
-	}
-	// Register the Jaeger exporter to be able to retrieve
-	// the collected spans.
-	exporter, err := jaeger.NewExporter(jaeger.Options{
-		Endpoint: fmt.Sprintf("http://%s", svcAddr),
-		Process: jaeger.Process{
-			ServiceName: "productcatalogservice",
-		},
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
-	trace.RegisterExporter(exporter)
-	log.Info("jaeger initialization completed.")
-}
-
-func initStats(exporter *stackdriver.Exporter) {
-	view.SetReportingPeriod(60 * time.Second)
-	view.RegisterExporter(exporter)
-	if err := view.Register(ocgrpc.DefaultServerViews...); err != nil {
-		log.Info("Error registering default server views")
-	} else {
-		log.Info("Registered default server views")
-	}
-}
-
-func initStackDriverTracing() {
-	// TODO(ahmetb) this method is duplicated in other microservices using Go
-	// since they are not sharing packages.
-	for i := 1; i <= 3; i++ {
-		exporter, err := stackdriver.NewExporter(stackdriver.Options{})
-		if err != nil {
-			log.Warnf("failed to initialize stackdriver exporter: %+v", err)
-		} else {
-			trace.RegisterExporter(exporter)
-			trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
-			log.Info("registered stackdriver tracing")
-
-			// Register the views to collect server stats.
-			initStats(exporter)
-			return
-		}
-		d := time.Second * 10 * time.Duration(i)
-		log.Infof("sleeping %v to retry initializing stackdriver exporter", d)
-		time.Sleep(d)
-	}
-	log.Warn("could not initialize stackdriver exporter after retrying, giving up")
-}
-
-func initTracing() {
-	initJaegerTracing()
-	initStackDriverTracing()
-}
-
-func initProfiling(service, version string) {
-	// TODO(ahmetb) this method is duplicated in other microservices using Go
-	// since they are not sharing packages.
-	for i := 1; i <= 3; i++ {
-		if err := profiler.Start(profiler.Config{
-			Service:        service,
-			ServiceVersion: version,
-			// ProjectID must be set if not running on GCP.
-			// ProjectID: "my-project",
-		}); err != nil {
-			log.Warnf("failed to start profiler: %+v", err)
-		} else {
-			log.Info("started stackdriver profiler")
-			return
-		}
-		d := time.Second * 10 * time.Duration(i)
-		log.Infof("sleeping %v to retry initializing stackdriver profiler", d)
-		time.Sleep(d)
-	}
-	log.Warn("could not initialize stackdriver profiler after retrying, giving up")
 }
 
 type productCatalog struct{}
