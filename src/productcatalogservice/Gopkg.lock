@@ -35,7 +35,7 @@
 [[projects]]
   branch = "master"
   digest = "1:14e66208d324c0ecb49934b5ac311c50a94e3a458e92b0026ef9e26919ac8d9d"
-  name = "github.com/GoogleCloudPlatform/microservices-demo"
+  name = "github.com/HPrinz/microservices-demo"
   packages = ["src/productcatalogservice/genproto"]
   pruneopts = "UT"
   revision = "10dfd04ab174cc680ed6ffef26cc4fb09ec40404"
@@ -315,7 +315,7 @@
   input-imports = [
     "cloud.google.com/go/profiler",
     "contrib.go.opencensus.io/exporter/stackdriver",
-    "github.com/GoogleCloudPlatform/microservices-demo/src/productcatalogservice/genproto",
+    "github.com/HPrinz/microservices-demo/src/productcatalogservice/genproto",
     "github.com/golang/protobuf/jsonpb",
     "github.com/golang/protobuf/proto",
     "github.com/google/go-cmp/cmp",

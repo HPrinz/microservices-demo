@@ -35,7 +35,7 @@
 [[projects]]
   branch = "master"
   digest = "1:6cbe7676244a1429f4c22601f799d377a70449469ef636f91d992d719b559ff3"
-  name = "github.com/GoogleCloudPlatform/microservices-demo"
+  name = "github.com/HPrinz/microservices-demo"
   packages = [
     "src/frontend/genproto",
     "src/frontend/money",
@@ -365,8 +365,8 @@
   input-imports = [
     "cloud.google.com/go/profiler",
     "contrib.go.opencensus.io/exporter/stackdriver",
-    "github.com/GoogleCloudPlatform/microservices-demo/src/frontend/genproto",
-    "github.com/GoogleCloudPlatform/microservices-demo/src/frontend/money",
+    "github.com/HPrinz/microservices-demo/src/frontend/genproto",
+    "github.com/HPrinz/microservices-demo/src/frontend/money",
     "github.com/golang/protobuf/proto",
     "github.com/google/uuid",
     "github.com/gorilla/mux",
