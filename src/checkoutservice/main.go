@@ -93,27 +93,27 @@ func main() {
 	log.Fatal(err)
 }
 
+func copyTracingHeaders(ctx context.Context) context.Context {
+	header := [...]string{"x-b3-spanid", "x-b3-traceid", "x-b3-flags",
+		"x-request-id", "x-b3-parentspanid",
+		"x-b3-sampled", "x-ot-span-context"}
+
+	md, ok := metadata.FromIncomingContext(ctx)
+
+	for i := 0; i < len(header); i++ {
+		h := header[i]
+		if len(md.Get(h)) > 0 {
+			ctx = metadata.AppendToOutgoingContext(ctx, h, md.Get(h)[0])
+		}
+	}
+	return ctx
+}
+
 // ctx is the incoming gRPC request's context
 // addr is the address for the new outbound request
 func createGRPCConn(ctx context.Context, addr string) (*grpc.ClientConn, context.Context, error) {
-	md, ok := metadata.FromIncomingContext(ctx)
-	log.Infof("ASJKFHGHJ ok?=%q md=%q", ok, md)
 
-	header := [7]string{"x-request-id", "x-b3-traceid", "x-b3-spanid", "x-b3-parentspanid", "x-b3-sampled", "x-b3-flags", "x-ot-span-context"}
-
-	mdo1, oko1 := metadata.FromOutgoingContext(ctx)
-	log.Infof("Oooooooo1 ok?=%q md=%q", oko1, mdo1)
-
-	for i := 0; i < len(header); i++ {
-		head := header[i]
-		if len(md.Get(head)) > 0 {
-			ctx = metadata.AppendToOutgoingContext(ctx, head, md.Get(head)[0])
-			log.Infof("appended %q", head)
-		}
-	}
-
-	mdo, oko := metadata.FromOutgoingContext(ctx)
-	log.Infof("Oooooooo ok?=%q md=%q", oko, mdo)
+	ctx = copyTracingHeaders(ctx)
 
 	conn, err := grpc.DialContext(ctx, addr, grpc.WithInsecure())
 	if err != nil {
