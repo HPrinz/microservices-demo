@@ -2,13 +2,6 @@ FROM node:8-alpine as base
 
 FROM base as builder
 
-# Some packages (e.g. @google-cloud/profiler) require additional
-# deps for post-install scripts
-RUN apk add --update --no-cache \
-    python \
-    make \
-    g++
-
 WORKDIR /usr/src/app
 
 COPY package*.json ./
