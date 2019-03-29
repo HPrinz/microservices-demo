@@ -51,8 +51,6 @@ func init() {
 }
 
 func main() {
-	//go initTracing()
-	//go initProfiling("shippingservice", "1.0.0")
 
 	port := defaultPort
 	if value, ok := os.LookupEnv("APP_PORT"); ok {

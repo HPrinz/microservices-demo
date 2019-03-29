@@ -87,9 +87,6 @@ func main() {
 	}
 	log.Out = os.Stdout
 
-	//go initProfiling(log, "frontend", "1.0.0")
-	//go initTracing(log)
-
 	srvPort := port
 	if os.Getenv("PORT") != "" {
 		srvPort = os.Getenv("PORT")

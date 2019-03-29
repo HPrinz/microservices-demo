@@ -27,7 +27,6 @@ repositories {
 group = "adservice"
 version = "0.1.0-SNAPSHOT"
 
-def opencensusVersion = "0.18.0"
 def grpcVersion = "1.17.0"
 def jacksonVersion = "2.9.6"
 
@@ -46,8 +45,6 @@ dependencies {
         compile fileTree(dir: offlineCompile, include: '*.jar')
     } else {
         compile "com.google.api.grpc:proto-google-common-protos:1.12.0",
-                "io.opencensus:opencensus-api:${opencensusVersion}",
-                "io.opencensus:opencensus-contrib-grpc-util:${opencensusVersion}",
                 "io.grpc:grpc-protobuf:${grpcVersion}",
                 "io.grpc:grpc-stub:${grpcVersion}",
                 "io.grpc:grpc-netty:${grpcVersion}",
@@ -56,8 +53,6 @@ dependencies {
 
         runtime "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}",
                 "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}",
-                "io.opencensus:opencensus-contrib-log-correlation-log4j2:${opencensusVersion}",
-                "io.opencensus:opencensus-impl:${opencensusVersion}",
                 "io.netty:netty-tcnative-boringssl-static:2.0.8.Final"
     }
 }

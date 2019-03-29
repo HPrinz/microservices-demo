@@ -22,10 +22,6 @@ import hipstershop.Demo.AdResponse;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
-import io.opencensus.common.Duration;
-import io.opencensus.common.Scope;
-import io.opencensus.contrib.grpc.metrics.RpcViews;
-import io.opencensus.contrib.grpc.util.StatusConverter;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 import org.apache.logging.log4j.Level;
@@ -109,12 +105,6 @@ public class AdServiceClient {
     final String contextKeys = getStringOrDefaultFromArgs(args, 0, "camera");
     final String host = getStringOrDefaultFromArgs(args, 1, "localhost");
     final int serverPort = getPortOrDefaultFromArgs(args, 2, 9555);
-
-    // Registers all RPC views.
-    RpcViews.registerAllGrpcViews();
-
-    // Register Prometheus exporters and export metrics to a Prometheus HTTPServer.
-    // PrometheusStatsCollector.createAndRegister();
 
     AdServiceClient client = new AdServiceClient(host, serverPort);
     try {
