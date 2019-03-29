@@ -17,15 +17,9 @@
 import os
 import random
 import time
-import traceback
 from concurrent import futures
 
-import googleclouddebugger
 import grpc
-from opencensus.trace.exporters import print_exporter
-from opencensus.trace.exporters import stackdriver_exporter
-from opencensus.trace.ext.grpc import server_interceptor
-from opencensus.trace.samplers import always_on
 
 import demo_pb2
 import demo_pb2_grpc
@@ -63,23 +57,6 @@ class RecommendationService(demo_pb2_grpc.RecommendationServiceServicer):
 if __name__ == "__main__":
     logger.info("initializing recommendationservice")
 
-    try:
-        sampler = always_on.AlwaysOnSampler()
-        exporter = stackdriver_exporter.StackdriverExporter()
-        tracer_interceptor = server_interceptor.OpenCensusServerInterceptor(sampler, exporter)
-    except:
-        tracer_interceptor = server_interceptor.OpenCensusServerInterceptor()
-
-    try:
-        googleclouddebugger.enable(
-            module='recommendationserver',
-            version='1.0.0'
-        )
-    except Exception, err:
-        logger.error("could not enable debugger")
-        logger.error(traceback.print_exc())
-        pass
-
     port = os.environ.get('PORT', "8080")
     catalog_addr = os.environ.get('PRODUCT_CATALOG_SERVICE_ADDR', '')
     if catalog_addr == "":
@@ -89,7 +66,7 @@ if __name__ == "__main__":
     product_catalog_stub = demo_pb2_grpc.ProductCatalogServiceStub(channel)
 
     # create gRPC server
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10)) # ,interceptors=(tracer_interceptor,))
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10)))
 
     # add class to gRPC server
     service = RecommendationService()
