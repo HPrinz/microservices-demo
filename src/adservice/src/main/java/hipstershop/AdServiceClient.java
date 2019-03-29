@@ -26,14 +26,6 @@ import io.opencensus.common.Duration;
 import io.opencensus.common.Scope;
 import io.opencensus.contrib.grpc.metrics.RpcViews;
 import io.opencensus.contrib.grpc.util.StatusConverter;
-import io.opencensus.exporter.stats.stackdriver.StackdriverStatsConfiguration;
-import io.opencensus.exporter.stats.stackdriver.StackdriverStatsExporter;
-import io.opencensus.exporter.trace.stackdriver.StackdriverTraceConfiguration;
-import io.opencensus.exporter.trace.stackdriver.StackdriverTraceExporter;
-import io.opencensus.trace.Span;
-import io.opencensus.trace.Tracer;
-import io.opencensus.trace.Tracing;
-import io.opencensus.trace.samplers.Samplers;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 import org.apache.logging.log4j.Level;
@@ -44,7 +36,6 @@ import org.apache.logging.log4j.Logger;
 public class AdServiceClient {
 
   private static final Logger logger = LogManager.getLogger(AdServiceClient.class);
-  private static final Tracer tracer = Tracing.getTracer();
 
   private final ManagedChannel channel;
   private final hipstershop.AdServiceGrpc.AdServiceBlockingStub blockingStub;
@@ -75,23 +66,13 @@ public class AdServiceClient {
     AdRequest request = AdRequest.newBuilder().addContextKeys(contextKey).build();
     AdResponse response;
 
-    Span span =
-        tracer
-            .spanBuilder("AdsClient")
-            .setRecordEvents(true)
-            .setSampler(Samplers.alwaysSample())
-            .startSpan();
-    try (Scope scope = tracer.withSpan(span)) {
-      tracer.getCurrentSpan().addAnnotation("Getting Ads");
+    try {
       response = blockingStub.getAds(request);
-      tracer.getCurrentSpan().addAnnotation("Received response from Ads Service.");
     } catch (StatusRuntimeException e) {
-      tracer.getCurrentSpan().setStatus(StatusConverter.fromGrpcStatus(e.getStatus()));
       logger.log(Level.WARN, "RPC failed: " + e.getStatus());
       return;
-    } finally {
-      span.end();
     }
+
     for (Ad ads : response.getAdsList()) {
       logger.info("Ads: " + ads.getText());
     }
@@ -131,35 +112,6 @@ public class AdServiceClient {
 
     // Registers all RPC views.
     RpcViews.registerAllGrpcViews();
-
-    // Registers Stackdriver exporters.
-    long sleepTime = 10; /* seconds */
-    int maxAttempts = 3;
-
-    for (int i = 0; i < maxAttempts; i++) {
-      try {
-        StackdriverTraceExporter.createAndRegister(StackdriverTraceConfiguration.builder().build());
-        StackdriverStatsExporter.createAndRegister(
-            StackdriverStatsConfiguration.builder()
-                .setExportInterval(Duration.create(15, 0))
-                .build());
-      } catch (Exception e) {
-        if (i == (maxAttempts - 1)) {
-          logger.log(
-              Level.WARN,
-              "Failed to register Stackdriver Exporter."
-                  + " Tracing and Stats data will not reported to Stackdriver. Error message: "
-                  + e.toString());
-        } else {
-          logger.info("Attempt to register Stackdriver Exporter in " + sleepTime + " seconds");
-          try {
-            Thread.sleep(TimeUnit.SECONDS.toMillis(sleepTime));
-          } catch (Exception se) {
-            logger.log(Level.WARN, "Exception while sleeping" + e.toString());
-          }
-        }
-      }
-    }
 
     // Register Prometheus exporters and export metrics to a Prometheus HTTPServer.
     // PrometheusStatsCollector.createAndRegister();
