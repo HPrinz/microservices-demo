@@ -95,7 +95,7 @@ func main() {
 
 // ctx is the incoming gRPC request's context
 // addr is the address for the new outbound request
-func createGRPCConn(ctx context.Context, addr string) (*grpc.ClientConn, error) {
+func createGRPCConn(ctx context.Context, addr string) (*grpc.ClientConn, context.Context, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	log.Infof("ASJKFHGHJ ok?=%q md=%q", ok, md)
 
@@ -118,9 +118,9 @@ func createGRPCConn(ctx context.Context, addr string) (*grpc.ClientConn, error) 
 	conn, err := grpc.DialContext(ctx, addr, grpc.WithInsecure())
 	if err != nil {
 		glog.Error("Failed to connect to application addr: ", err)
-		return nil, err
+		return nil, nil, err
 	}
-	return conn, nil
+	return conn, ctx, nil
 }
 
 func mustMapEnv(target *string, envKey string) {
@@ -218,14 +218,14 @@ func (cs *checkoutService) prepareOrderItemsAndShippingQuoteFromCart(ctx context
 }
 
 func (cs *checkoutService) quoteShipping(ctx context.Context, address *pb.Address, items []*pb.CartItem) (*pb.Money, error) {
-	conn, err := createGRPCConn(ctx, cs.shippingSvcAddr)
+	conn, ctx2, err := createGRPCConn(ctx, cs.shippingSvcAddr)
 	if err != nil {
 		return nil, fmt.Errorf("could not connect shipping service: %+v", err)
 	}
 	defer conn.Close()
 
 	shippingQuote, err := pb.NewShippingServiceClient(conn).
-		GetQuote(ctx, &pb.GetQuoteRequest{
+		GetQuote(ctx2, &pb.GetQuoteRequest{
 			Address: address,
 			Items:   items})
 	if err != nil {
@@ -235,13 +235,13 @@ func (cs *checkoutService) quoteShipping(ctx context.Context, address *pb.Addres
 }
 
 func (cs *checkoutService) getUserCart(ctx context.Context, userID string) ([]*pb.CartItem, error) {
-	conn, err := createGRPCConn(ctx, cs.cartSvcAddr)
+	conn, ctx2, err := createGRPCConn(ctx, cs.cartSvcAddr)
 	if err != nil {
 		return nil, fmt.Errorf("could not connect cart service: %+v", err)
 	}
 	defer conn.Close()
 
-	cart, err := pb.NewCartServiceClient(conn).GetCart(ctx, &pb.GetCartRequest{UserId: userID})
+	cart, err := pb.NewCartServiceClient(conn).GetCart(ctx2, &pb.GetCartRequest{UserId: userID})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user cart during checkout: %+v", err)
 	}
@@ -249,13 +249,13 @@ func (cs *checkoutService) getUserCart(ctx context.Context, userID string) ([]*p
 }
 
 func (cs *checkoutService) emptyUserCart(ctx context.Context, userID string) error {
-	conn, err := createGRPCConn(ctx, cs.cartSvcAddr)
+	conn, ctx2, err := createGRPCConn(ctx, cs.cartSvcAddr)
 	if err != nil {
 		return fmt.Errorf("could not connect cart service: %+v", err)
 	}
 	defer conn.Close()
 
-	if _, err = pb.NewCartServiceClient(conn).EmptyCart(ctx, &pb.EmptyCartRequest{UserId: userID}); err != nil {
+	if _, err = pb.NewCartServiceClient(conn).EmptyCart(ctx2, &pb.EmptyCartRequest{UserId: userID}); err != nil {
 		return fmt.Errorf("failed to empty user cart during checkout: %+v", err)
 	}
 	return nil
@@ -264,7 +264,7 @@ func (cs *checkoutService) emptyUserCart(ctx context.Context, userID string) err
 func (cs *checkoutService) prepOrderItems(ctx context.Context, items []*pb.CartItem, userCurrency string) ([]*pb.OrderItem, error) {
 	out := make([]*pb.OrderItem, len(items))
 
-	conn, err := createGRPCConn(ctx, cs.productCatalogSvcAddr)
+	conn, ctx2, err := createGRPCConn(ctx, cs.productCatalogSvcAddr)
 	if err != nil {
 		return nil, fmt.Errorf("could not connect product catalog service: %+v", err)
 	}
@@ -272,11 +272,11 @@ func (cs *checkoutService) prepOrderItems(ctx context.Context, items []*pb.CartI
 	cl := pb.NewProductCatalogServiceClient(conn)
 
 	for i, item := range items {
-		product, err := cl.GetProduct(ctx, &pb.GetProductRequest{Id: item.GetProductId()})
+		product, err := cl.GetProduct(ctx2, &pb.GetProductRequest{Id: item.GetProductId()})
 		if err != nil {
 			return nil, fmt.Errorf("failed to get product #%q", item.GetProductId())
 		}
-		price, err := cs.convertCurrency(ctx, product.GetPriceUsd(), userCurrency)
+		price, err := cs.convertCurrency(ctx2, product.GetPriceUsd(), userCurrency)
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert price of %q to %s", item.GetProductId(), userCurrency)
 		}
@@ -288,12 +288,12 @@ func (cs *checkoutService) prepOrderItems(ctx context.Context, items []*pb.CartI
 }
 
 func (cs *checkoutService) convertCurrency(ctx context.Context, from *pb.Money, toCurrency string) (*pb.Money, error) {
-	conn, err := createGRPCConn(ctx, cs.currencySvcAddr)
+	conn, ctx2, err := createGRPCConn(ctx, cs.currencySvcAddr)
 	if err != nil {
 		return nil, fmt.Errorf("could not connect currency service: %+v", err)
 	}
 	defer conn.Close()
-	result, err := pb.NewCurrencyServiceClient(conn).Convert(context.TODO(), &pb.CurrencyConversionRequest{
+	result, err := pb.NewCurrencyServiceClient(conn).Convert(ctx2, &pb.CurrencyConversionRequest{
 		From:   from,
 		ToCode: toCurrency})
 	if err != nil {
@@ -303,13 +303,13 @@ func (cs *checkoutService) convertCurrency(ctx context.Context, from *pb.Money, 
 }
 
 func (cs *checkoutService) chargeCard(ctx context.Context, amount *pb.Money, paymentInfo *pb.CreditCardInfo) (string, error) {
-	conn, err := createGRPCConn(ctx, cs.paymentSvcAddr)
+	conn, ctx2, err := createGRPCConn(ctx, cs.paymentSvcAddr)
 	if err != nil {
 		return "", fmt.Errorf("failed to connect payment service: %+v", err)
 	}
 	defer conn.Close()
 
-	paymentResp, err := pb.NewPaymentServiceClient(conn).Charge(ctx, &pb.ChargeRequest{
+	paymentResp, err := pb.NewPaymentServiceClient(conn).Charge(ctx2, &pb.ChargeRequest{
 		Amount:     amount,
 		CreditCard: paymentInfo})
 	if err != nil {
@@ -319,24 +319,24 @@ func (cs *checkoutService) chargeCard(ctx context.Context, amount *pb.Money, pay
 }
 
 func (cs *checkoutService) sendOrderConfirmation(ctx context.Context, email string, order *pb.OrderResult) error {
-	conn, err := createGRPCConn(ctx, cs.emailSvcAddr)
+	conn, ctx2, err := createGRPCConn(ctx, cs.emailSvcAddr)
 	if err != nil {
 		return fmt.Errorf("failed to connect email service: %+v", err)
 	}
 	defer conn.Close()
-	_, err = pb.NewEmailServiceClient(conn).SendOrderConfirmation(ctx, &pb.SendOrderConfirmationRequest{
+	_, err = pb.NewEmailServiceClient(conn).SendOrderConfirmation(ctx2, &pb.SendOrderConfirmationRequest{
 		Email: email,
 		Order: order})
 	return err
 }
 
 func (cs *checkoutService) shipOrder(ctx context.Context, address *pb.Address, items []*pb.CartItem) (string, error) {
-	conn, err := createGRPCConn(ctx, cs.shippingSvcAddr)
+	conn, ctx2, err := createGRPCConn(ctx, cs.shippingSvcAddr)
 	if err != nil {
 		return "", fmt.Errorf("failed to connect email service: %+v", err)
 	}
 	defer conn.Close()
-	resp, err := pb.NewShippingServiceClient(conn).ShipOrder(ctx, &pb.ShipOrderRequest{
+	resp, err := pb.NewShippingServiceClient(conn).ShipOrder(ctx2, &pb.ShipOrderRequest{
 		Address: address,
 		Items:   items})
 	if err != nil {
