@@ -142,31 +142,25 @@ func mustMapEnv(target *string, envKey string) {
 	*target = v
 }
 
-func mustConnGRPC(ctx context.Context, conn **grpc.ClientConn, addr string, log logrus.FieldLogger) {
+func copyTracingHeaders(ctx context.Context) context.Context {
+	header := [...]string{"x-b3-spanid", "x-b3-traceid", "x-b3-flags",
+		"x-request-id", "x-b3-parentspanid",
+		"x-b3-sampled", "x-ot-span-context"}
 
-	md, ok := metadata.FromIncomingContext(ctx)
-	log.Infof("ASJKFHGHJ ok?=%q md=%q", ok, md)
-
-	header := [7]string{"x-request-id", "x-b3-traceid", "x-b3-spanid", "x-b3-parentspanid", "x-b3-sampled", "x-b3-flags", "x-ot-span-context"}
-
-	mdo1, oko1 := metadata.FromOutgoingContext(ctx)
-	log.Infof("Oooooooo1 ok?=%q md=%q", oko1, mdo1)
+	md, _ := metadata.FromIncomingContext(ctx)
 
 	for i := 0; i < len(header); i++ {
-		head := header[i]
-		if len(md.Get(head)) > 0 {
-			ctx = metadata.AppendToOutgoingContext(ctx, head, md.Get(head)[0])
-			log.Infof("appended %q", head)
+		h := header[i]
+		if len(md.Get(h)) > 0 {
+			ctx = metadata.AppendToOutgoingContext(ctx, h, md.Get(h)[0])
 		}
 	}
+	return ctx
+}
 
-	mdo, oko := metadata.FromOutgoingContext(ctx)
-	log.Infof("Oooooooo ok?=%q md=%q", oko, mdo)
-
-	ctx = metadata.NewOutgoingContext(context.Background(), mdo)
-
+func mustConnGRPC(ctx context.Context, conn **grpc.ClientConn, addr string, log logrus.FieldLogger) {
 	var err error
-	*conn, err = grpc.DialContext(ctx, addr,
+	*conn, err = grpc.DialContext(copyTracingHeaders(ctx), addr,
 		grpc.WithInsecure(),
 		grpc.WithTimeout(time.Second*3))
 	if err != nil {

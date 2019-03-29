@@ -98,7 +98,7 @@ func copyTracingHeaders(ctx context.Context) context.Context {
 		"x-request-id", "x-b3-parentspanid",
 		"x-b3-sampled", "x-ot-span-context"}
 
-	md, ok := metadata.FromIncomingContext(ctx)
+	md, _ := metadata.FromIncomingContext(ctx)
 
 	for i := 0; i < len(header); i++ {
 		h := header[i]
