@@ -21,7 +21,6 @@ import sys
 import time
 import grpc
 from jinja2 import Environment, FileSystemLoader, select_autoescape, TemplateError
-from google.api_core.exceptions import GoogleAPICallError
 
 import demo_pb2
 import demo_pb2_grpc
@@ -82,7 +81,7 @@ class EmailService(BaseEmailService):
 
     try:
       EmailService.send_email(self.client, email, confirmation)
-    except GoogleAPICallError as err:
+    except Exception as err:
       context.set_details("An error occurred when sending the email.")
       print(err.message)
       context.set_code(grpc.StatusCode.INTERNAL)

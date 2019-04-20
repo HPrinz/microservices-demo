@@ -66,7 +66,6 @@ func (lh *logHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	})
 
 	ctx = context.WithValue(ctx, ctxKeyRequestID{}, requestID.String())
-	log.Info("aaaaaaaaaa", r.Header)
 
 	if v, ok := r.Context().Value(ctxKeySessionID{}).(string); ok {
 		log = log.WithField("session", v)
@@ -82,7 +81,6 @@ func (lh *logHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx = context.WithValue(ctx, ctxKeyLog{}, log)
 
 	md := r.Header
-	log.Infof("ASJKFHGHJ md=%q", md)
 
 	header := [7]string{"X-Request-Id", "X-B3-Traceid", "X-B3-Spanid", "X-B3-Parentspanid", "X-B3-Sampled", "X-B3-Flags", "X-Ot-Span-Context"}
 
@@ -90,15 +88,10 @@ func (lh *logHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		head := header[i]
 		if len(md.Get(head)) > 0 {
 			ctx = metadata.AppendToOutgoingContext(ctx, head, md.Get(head))
-			log.Infof("appended %q - %q", head, md.Get(head))
 		}
 	}
 
 	mdo, oko := metadata.FromOutgoingContext(ctx)
-	log.Infof("Oooooooo md=%q", mdo)
-	print(oko)
-
-	//ctx = metadata.NewOutgoingContext(context.Background(), mdo)
 
 	r = r.WithContext(ctx)
 	lh.next.ServeHTTP(rr, r)

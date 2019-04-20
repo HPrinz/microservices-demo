@@ -25,7 +25,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 )
 
 const (
@@ -139,25 +138,9 @@ func mustMapEnv(target *string, envKey string) {
 	*target = v
 }
 
-func copyTracingHeaders(ctx context.Context) context.Context {
-	header := [...]string{"x-b3-spanid", "x-b3-traceid", "x-b3-flags",
-		"x-request-id", "x-b3-parentspanid",
-		"x-b3-sampled", "x-ot-span-context"}
-
-	md, _ := metadata.FromIncomingContext(ctx)
-
-	for i := 0; i < len(header); i++ {
-		h := header[i]
-		if len(md.Get(h)) > 0 {
-			ctx = metadata.AppendToOutgoingContext(ctx, h, md.Get(h)[0])
-		}
-	}
-	return ctx
-}
-
 func mustConnGRPC(ctx context.Context, conn **grpc.ClientConn, addr string, log logrus.FieldLogger) {
 	var err error
-	*conn, err = grpc.DialContext(copyTracingHeaders(ctx), addr,
+	*conn, err = grpc.DialContext(ctx, addr,
 		grpc.WithInsecure(),
 		grpc.WithTimeout(time.Second*3))
 	if err != nil {

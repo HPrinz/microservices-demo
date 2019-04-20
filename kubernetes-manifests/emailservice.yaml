@@ -28,7 +28,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/hanna-prinz/emailservice
+        image: gcr.io/hanna-prinz/emailservice:e0ed3c6-dirty-21a53f8
         ports:
         - containerPort: 8080
         readinessProbe:

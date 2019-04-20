@@ -28,25 +28,25 @@ spec:
     spec:
       containers:
         - name: server
-          image: gcr.io/hanna-prinz/frontend:19a11aa
+          image: gcr.io/hanna-prinz/frontend:e0ed3c6-dirty-2729b8d
           ports:
           - containerPort: 8080
-          # readinessProbe:
-          #   initialDelaySeconds: 10
-          #   httpGet:
-          #     path: "/_healthz"
-          #     port: 8080
-          #     httpHeaders:
-          #     - name: "Cookie"
-          #       value: "shop_session-id=x-readiness-probe"
-          # livenessProbe:
-          #   initialDelaySeconds: 10
-          #   httpGet:
-          #     path: "/_healthz"
-          #     port: 8080
-          #     httpHeaders:
-          #     - name: "Cookie"
-          #       value: "shop_session-id=x-liveness-probe"
+          readinessProbe:
+            initialDelaySeconds: 10
+            httpGet:
+              path: "/_healthz"
+              port: 8080
+              httpHeaders:
+              - name: "Cookie"
+                value: "shop_session-id=x-readiness-probe"
+          livenessProbe:
+            initialDelaySeconds: 10
+            httpGet:
+              path: "/_healthz"
+              port: 8080
+              httpHeaders:
+              - name: "Cookie"
+                value: "shop_session-id=x-liveness-probe"
           env:
           - name: PRODUCT_CATALOG_SERVICE_ADDR
             value: "productcatalogservice:3550"
@@ -62,8 +62,6 @@ spec:
             value: "checkoutservice:5050"
           - name: AD_SERVICE_ADDR
             value: "adservice:9555"
-          - name: JAEGER_SERVICE_ADDR
-            value: "jaeger-collector:14268"
           resources:
             requests:
               cpu: 100m

@@ -41,12 +41,14 @@ spec:
           value: "frontend:80"
       containers:
       - name: main
-        image: loadgenerator
+        image: gcr.io/hanna-prinz/loadgenerator
         env:
         - name: FRONTEND_ADDR
           value: "frontend:80"
         - name: USERS
-          value: "10"
+          value: "300"
+        - name: DURATION
+          value: "5"
         resources:
           requests:
             cpu: 300m
