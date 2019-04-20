@@ -91,8 +91,6 @@ func (lh *logHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	mdo, oko := metadata.FromOutgoingContext(ctx)
-
 	r = r.WithContext(ctx)
 	lh.next.ServeHTTP(rr, r)
 }
