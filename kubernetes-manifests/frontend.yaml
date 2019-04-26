@@ -28,7 +28,7 @@ spec:
     spec:
       containers:
         - name: server
-          image: gcr.io/hanna-prinz/frontend:e0ed3c6-dirty-2729b8d
+          image: gcr.io/hanna-prinz/frontend:be48b14
           ports:
           - containerPort: 8080
           readinessProbe:

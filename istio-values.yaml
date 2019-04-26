@@ -1,0 +1,11 @@
+grafana:
+  enabled: true
+tracing:
+  enabled: true
+kiali:
+  enabled: true
+  tag: v0.15
+  dashboard.jaegerURL: "http://localhost:16686"
+  dashboard.grafanaURL: "http://localhost:3000"
+pilot:
+  traceSampling: 100.0
