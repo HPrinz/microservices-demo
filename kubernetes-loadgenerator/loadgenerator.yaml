@@ -26,9 +26,9 @@ spec:
     - name: FRONTEND_ADDR
       value: "frontend:80"
     - name: USERS
-      value: "300"
+      value: "1000"
     - name: DURATION
-      value: "5"
+      value: "10"
     resources:
       requests:
         cpu: 300m
