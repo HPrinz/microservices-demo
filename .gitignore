@@ -9,3 +9,9 @@ pkg/
 .idea
 .skaffold-*.yaml
 .kubernetes-manifests-*/
+
+src/adservice/\.project
+
+src/adservice/\.settings/org\.eclipse\.buildship\.core\.prefs
+
+results/logs\.json
